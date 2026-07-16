@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -416,6 +417,18 @@ func (f *Form) GetString(key string) string {
 		return ""
 	}
 	return v
+}
+
+// TODO: enhance to keep track of field keys from the form itself (poll each group?)
+func (f *Form) GetResultInts(fieldKeys []string) map[string]int {
+	result := make(map[string]int, len(fieldKeys))
+
+	for _, fieldKey := range fieldKeys {
+		integer, _ := strconv.Atoi(f.GetString(fieldKey))
+		result[fieldKey] = integer
+	}
+
+	return result
 }
 
 // GetInt returns a result as a int from the form.

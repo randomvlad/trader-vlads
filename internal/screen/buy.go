@@ -67,7 +67,8 @@ func (b *BuyScreen) Init() tea.Cmd {
 				return errors.New(fmt.Sprintf("Invalid value. Enter a number between %v - %v or leave blank", minRange, maxRange))
 			}
 
-			_, totalCost := b.getFormResult()
+			// TODO: rework this. introduce group level validation
+			totalCost := b.getTotalCost()
 			if totalCost > b.money {
 				return errors.New(fmt.Sprintf("Total cost of %v exceeds available funds", util.FormatMoney(totalCost)))
 			}
@@ -93,22 +94,20 @@ func (b *BuyScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if b.form.State == gimme.StateAborted {
 		b.OnAborted()
 	} else if b.form.State == gimme.StateCompleted {
-		result, _ := b.getFormResult()
+		result := b.form.GetResultInts(b.marketItems)
 		b.OnComplete(result)
 	}
 
 	return b, tea.Batch(cmds...)
 }
 
-func (b *BuyScreen) getFormResult() (map[string]int, int) {
-	result := make(map[string]int)
+func (b *BuyScreen) getTotalCost() int {
+	result := b.form.GetResultInts(b.marketItems)
 
 	totalCost := 0
-	for _, item := range b.marketItems {
-		quantity, _ := strconv.Atoi(b.form.GetString(item))
-		result[item] = quantity
-		totalCost += quantity * b.marketPrices[item]
+	for item, quantity := range result {
+		totalCost += b.marketPrices[item] * quantity
 	}
 
-	return result, totalCost
+	return totalCost
 }

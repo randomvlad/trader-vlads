@@ -2,8 +2,8 @@ package screen
 
 import (
 	"fmt"
+	"maps"
 	"slices"
-	"strconv"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -78,16 +78,9 @@ func (s *SellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if s.form.State == gimme.StateAborted {
 		s.OnAborted()
 	} else if s.form.State == gimme.StateCompleted {
-		result := make(map[string]int)
-
-		// TODO: enforce can only sell up to max inventory quantity ... could be an input validation function?
-		for item, _ := range s.inventory {
-			quantity, _ := strconv.Atoi(s.form.GetString(item))
-			if quantity > 0 {
-				result[item] = quantity
-			}
-		}
-
+		// TODO: need validation to enforce selling up to max of inventory
+		inputFields := slices.Collect(maps.Keys(s.inventory))
+		result := s.form.GetResultInts(inputFields)
 		s.OnComplete(result)
 	}
 
