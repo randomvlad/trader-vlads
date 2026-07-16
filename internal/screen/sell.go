@@ -2,7 +2,6 @@ package screen
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 
@@ -79,9 +78,8 @@ func (s *SellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.OnAborted()
 	} else if s.form.State == gimme.StateCompleted {
 		// TODO: need validation to enforce selling up to max of inventory
-		inputFields := slices.Collect(maps.Keys(s.inventory))
-		result := s.form.GetResultInts(inputFields)
-		s.OnComplete(result)
+		inputValues := s.form.GetValuesInt()
+		s.OnComplete(inputValues)
 	}
 
 	return s, tea.Batch(cmds...)

@@ -94,18 +94,18 @@ func (b *BuyScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if b.form.State == gimme.StateAborted {
 		b.OnAborted()
 	} else if b.form.State == gimme.StateCompleted {
-		result := b.form.GetResultInts(b.marketItems)
-		b.OnComplete(result)
+		inputValues := b.form.GetValuesInt()
+		b.OnComplete(inputValues)
 	}
 
 	return b, tea.Batch(cmds...)
 }
 
 func (b *BuyScreen) getTotalCost() int {
-	result := b.form.GetResultInts(b.marketItems)
+	inputValues := b.form.GetValuesInt()
 
 	totalCost := 0
-	for item, quantity := range result {
+	for item, quantity := range inputValues {
 		totalCost += b.marketPrices[item] * quantity
 	}
 
