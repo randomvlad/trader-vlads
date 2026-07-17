@@ -31,10 +31,7 @@ func NewBuyScreen(marketItems []string, marketPrices map[string]int, money int) 
 }
 
 func (b *BuyScreen) View() tea.View {
-	var sb strings.Builder
-	sb.WriteString("Purchase Order:\n")
-	sb.WriteString(b.form.View().Content)
-	return tea.NewView(style.Render(sb.String()))
+	return tea.NewView(style.Render(b.form.View().Content))
 }
 
 func (b *BuyScreen) Init() tea.Cmd {
@@ -67,19 +64,27 @@ func (b *BuyScreen) Init() tea.Cmd {
 				return errors.New(fmt.Sprintf("Invalid value. Enter a number between %v - %v or leave blank", minRange, maxRange))
 			}
 
-			// TODO: rework this. introduce group level validation
-			totalCost := b.getTotalCost()
-			if totalCost > b.money {
-				return errors.New(fmt.Sprintf("Total cost of %v exceeds available funds", util.FormatMoney(totalCost)))
-			}
-
-			return err
+			return nil
 		})
 	}
 
-	b.form = gimme.NewForm(gimme.NewGroup(inputFields...)).
-		WithShowHelp(true).
+	group := gimme.NewGroup(inputFields...).
+		Title("Purchase Order:").
+		WithValidation(func(group *gimme.Group) error {
+			totalCost := 0
+			for item, quantity := range group.GetValuesInt() {
+				totalCost += b.marketPrices[item] * quantity
+			}
+			if totalCost > b.money {
+				return errors.New(fmt.Sprintf("Requested purchase costs %v and exceeds available funds", util.FormatMoney(totalCost)))
+			}
+
+			return nil
+		})
+
+	b.form = gimme.NewForm(group).
 		WithKeyMap(keyMap).
+		WithShowHelp(true).
 		WithShowErrors(true)
 
 	return b.form.Init()
@@ -99,15 +104,4 @@ func (b *BuyScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return b, tea.Batch(cmds...)
-}
-
-func (b *BuyScreen) getTotalCost() int {
-	inputValues := b.form.GetValuesInt()
-
-	totalCost := 0
-	for item, quantity := range inputValues {
-		totalCost += b.marketPrices[item] * quantity
-	}
-
-	return totalCost
 }

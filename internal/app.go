@@ -16,11 +16,11 @@ import (
 )
 
 func NewGame() *GameData {
-	vlad := createPlayer()
-	turn := getTurnData(vlad)
+	player := createPlayer()
+	turn := getTurnData(player)
 
 	return &GameData{
-		player:     vlad,
+		player:     player,
 		turn:       turn,
 		showScreen: ScreenMain,
 		toast:      toast.Model{},
@@ -170,13 +170,13 @@ func (g *GameData) initSellScreen() tea.Cmd {
 	return g.screenSell.Init()
 }
 
-func getTurnData(vlad *Player) *TurnData {
+func getTurnData(player *Player) *TurnData {
 
-	randomItemIndices := rand.Perm(len(vlad.activeItems))[:5]
+	randomItemIndices := rand.Perm(len(player.activeItems))[:5]
 
 	marketPrices := make(map[string]int)
 	for _, randomIndex := range randomItemIndices {
-		itemName := vlad.activeItems[randomIndex]
+		itemName := player.activeItems[randomIndex]
 		itemPrice := rand.IntN(41) + 10
 
 		marketPrices[itemName] = itemPrice

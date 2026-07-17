@@ -1,6 +1,7 @@
 package gimme
 
 import (
+	"strconv"
 	"strings"
 
 	"charm.land/bubbles/v2/help"
@@ -31,7 +32,9 @@ type Group struct {
 	showHelp bool
 	help     help.Model
 
-	// errors
+	// validation
+	validate   func(*Group) error
+	err        error
 	showErrors bool
 
 	// group options
@@ -46,13 +49,15 @@ type Group struct {
 
 // NewGroup returns a new group with the given fields.
 func NewGroup(fields ...Field) *Group {
-	selector := NewSelector(fields)
 	group := &Group{
-		selector:   selector,
+		selector:   NewSelector(fields),
 		help:       help.New(),
 		showHelp:   true,
 		showErrors: true,
 		active:     false,
+		validate: func(g *Group) error {
+			return nil
+		},
 	}
 
 	group.width = 80
@@ -88,6 +93,11 @@ func (g *Group) WithShowHelp(show bool) *Group {
 // WithShowErrors sets whether or not the group's errors should be shown.
 func (g *Group) WithShowErrors(show bool) *Group {
 	g.showErrors = show
+	return g
+}
+
+func (g *Group) WithValidation(validate func(*Group) error) *Group {
+	g.validate = validate
 	return g
 }
 
@@ -154,6 +164,15 @@ func (g *Group) WithHideFunc(hideFunc func() bool) *Group {
 	return g
 }
 
+func (g *Group) IsHidden() bool {
+	if g.hide != nil {
+		return g.hide()
+	} else {
+		return false
+	}
+}
+
+// TODO: this is becoming more ombigious given new group error level. Need to make the separation clearer
 // Errors returns the groups' fields' errors.
 func (g *Group) Errors() []error {
 	var errs []error
@@ -163,6 +182,11 @@ func (g *Group) Errors() []error {
 		}
 		return true
 	})
+
+	if g.err != nil {
+		errs = append(errs, g.err)
+	}
+
 	return errs
 }
 
@@ -282,8 +306,10 @@ func (g *Group) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		g.hasDarkBg = msg.IsDark()
 	case nextFieldMsg:
 		cmds = append(cmds, g.nextField()...)
+		g.err = g.validate(g)
 	case prevFieldMsg:
 		cmds = append(cmds, g.prevField()...)
+		g.err = g.validate(g)
 	}
 
 	g.buildView()
@@ -400,16 +426,34 @@ func (g *Group) Footer() string {
 	}
 	if g.showErrors {
 		for _, err := range errors {
-			parts = append(parts, wrap(
-				g.getTheme().Focused.ErrorMessage.Render(err.Error()),
-				g.width,
-			))
+			parts = append(parts, wrap(g.getTheme().Focused.ErrorMessage.Render(err.Error()), g.width))
 		}
 	}
-	return g.styles().Base.
-		Render(strings.Join(parts, "\n"))
+	return g.styles().Base.Render(strings.Join(parts, "\n"))
 }
 
 func wrap(s string, limit int) string {
 	return lipgloss.Wrap(s, limit, ",.-; ")
+}
+
+// GetFieldKeys Get list of group's field keys
+func (g *Group) GetFieldKeys() []string {
+	var fieldKeys []string
+	for _, field := range g.selector.items {
+		fieldKeys = append(fieldKeys, field.GetKey())
+	}
+	return fieldKeys
+}
+
+// GetValuesInt group's input field values converted to integers
+func (g *Group) GetValuesInt() map[string]int {
+
+	result := make(map[string]int)
+
+	for _, field := range g.selector.items {
+		integer, _ := strconv.Atoi(field.GetValue().(string))
+		result[field.GetKey()] = integer
+	}
+
+	return result
 }

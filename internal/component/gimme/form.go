@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"sync"
@@ -72,9 +71,6 @@ type Form struct {
 
 	State FormState
 
-	quitting bool
-	aborted  bool
-
 	// options
 	width      int
 	height     int
@@ -85,10 +81,6 @@ type Form struct {
 	teaOptions []tea.ProgramOption
 
 	layout Layout
-
-	// accessible mode IO
-	output io.Writer
-	input  io.Reader
 }
 
 // NewForm returns a form with the given groups and default themes and
@@ -97,10 +89,9 @@ type Form struct {
 // Use With* methods to customize the form with options, such as setting
 // different themes and keybindings.
 func NewForm(groups ...*Group) *Form {
-	selector := NewSelector(groups)
 
 	f := &Form{
-		selector: selector,
+		selector: NewSelector(groups),
 		keymap:   huh.NewDefaultKeyMap(),
 		results:  make(map[string]any),
 		layout:   LayoutDefault,
@@ -109,8 +100,6 @@ func NewForm(groups ...*Group) *Form {
 		},
 	}
 
-	// NB: If dynamic forms come into play this will need to be applied when
-	// groups and fields are added.
 	f.WithKeyMap(f.keymap)
 	f.WithWidth(f.width)
 	f.WithHeight(f.height)
@@ -244,22 +233,6 @@ func (f *Form) WithHeight(height int) *Form {
 	return f
 }
 
-// WithOutput sets the io.Writer to output the form.
-// Default is STDOUT when [Form] is accessible (set with [Form.WithAccessible], STDERR otherwise.
-func (f *Form) WithOutput(w io.Writer) *Form {
-	f.output = w
-	f.teaOptions = append(f.teaOptions, tea.WithOutput(w))
-	return f
-}
-
-// WithInput sets the io.Reader to the input form.
-// Default is STDIN.
-func (f *Form) WithInput(r io.Reader) *Form {
-	f.input = r
-	f.teaOptions = append(f.teaOptions, tea.WithInput(r))
-	return f
-}
-
 // WithTimeout sets the duration for the form to be killed.
 func (f *Form) WithTimeout(t time.Duration) *Form {
 	f.timeout = t
@@ -287,7 +260,7 @@ func (f *Form) UpdateFieldPositions() *Form {
 
 	// determine the first non-hidden group.
 	f.selector.Range(func(_ int, g *Group) bool {
-		if !f.isGroupHidden(g) {
+		if !g.IsHidden() {
 			return false
 		}
 		firstGroup++
@@ -296,7 +269,7 @@ func (f *Form) UpdateFieldPositions() *Form {
 
 	// determine the last non-hidden group.
 	f.selector.ReverseRange(func(_ int, g *Group) bool {
-		if !f.isGroupHidden(g) {
+		if !g.IsHidden() {
 			return false
 		}
 		lastGroup--
@@ -457,7 +430,7 @@ func (f *Form) Init() tea.Cmd {
 		return true
 	})
 
-	if f.isGroupHidden(f.selector.Selected()) {
+	if f.selector.Selected().IsHidden() {
 		cmds = append(cmds, nextGroup)
 	}
 
@@ -487,7 +460,7 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if f.height == 0 {
 			// calculate the needed height, which is the height of the
-			// heightest group, accounting for the width, wraps, etc.
+			// highest group, accounting for the width, wraps, etc.
 			neededHeight := 0
 			f.selector.Range(func(_ int, group *Group) bool {
 				neededHeight = max(neededHeight, group.rawHeight())
@@ -503,8 +476,6 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, f.keymap.Quit):
-			f.aborted = true
-			f.quitting = true
 			f.State = StateAborted
 			return f, f.CancelCmd
 		}
@@ -519,25 +490,21 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return f, nil
 		}
 
-		submit := func() (tea.Model, tea.Cmd) {
-			f.quitting = true
+		if f.selector.OnLast() {
 			f.State = StateCompleted
 			return f, f.SubmitCmd
 		}
 
-		if f.selector.OnLast() {
-			return submit()
-		}
-
 		for i := f.selector.Index() + 1; i < f.selector.Total(); i++ {
-			if !f.isGroupHidden(f.selector.Get(i)) {
+			if !f.selector.Get(i).IsHidden() {
 				f.selector.SetIndex(i)
 				break
 			}
 			// all subsequent groups are hidden, so we must act as
 			// if we were in the last one.
 			if i == f.selector.Total()-1 {
-				return submit()
+				f.State = StateCompleted
+				return f, f.SubmitCmd
 			}
 		}
 		f.selector.Selected().active = true
@@ -549,7 +516,7 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		for i := f.selector.Index() - 1; i >= 0; i-- {
-			if !f.isGroupHidden(f.selector.Get(i)) {
+			if !f.selector.Get(i).IsHidden() {
 				f.selector.SetIndex(i)
 				break
 			}
@@ -560,6 +527,10 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m, cmd := group.Update(msg)
+	if len(group.Errors()) > 0 {
+		return f, cmd
+	}
+
 	f.selector.Set(f.selector.Index(), m.(*Group))
 
 	// A user input a key, this could hide or show other groups,
@@ -570,14 +541,6 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return f, cmd
-}
-
-func (f *Form) isGroupHidden(group *Group) bool {
-	hide := group.hide
-	if hide == nil {
-		return false
-	}
-	return hide()
 }
 
 func (f *Form) getTheme() *huh.Styles {
@@ -593,11 +556,14 @@ func (f *Form) styles() huh.FormStyles {
 
 // View renders the form.
 func (f *Form) View() tea.View {
-	if f.quitting {
+	switch f.State {
+	case StateAborted, StateCompleted:
 		return tea.NewView("")
+	case StateNormal:
+		fallthrough
+	default:
+		return tea.NewView(f.styles().Base.Render(f.layout.View(f)))
 	}
-
-	return tea.NewView(f.styles().Base.Render(f.layout.View(f)))
 }
 
 // Run runs the form.
@@ -627,7 +593,7 @@ func (f *Form) run(ctx context.Context) error {
 
 	f.teaOptions = append(f.teaOptions, tea.WithContext(ctx))
 	_, err := tea.NewProgram(f, f.teaOptions...).Run()
-	if f.aborted || errors.Is(err, tea.ErrInterrupted) {
+	if f.State == StateAborted || errors.Is(err, tea.ErrInterrupted) {
 		return ErrUserAborted
 	}
 	if errors.Is(err, tea.ErrProgramKilled) {
