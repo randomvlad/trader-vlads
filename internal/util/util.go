@@ -1,11 +1,8 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"image/color"
-	"strconv"
-	"strings"
 
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/component/gimme"
@@ -25,7 +22,12 @@ func ToColors(names ...string) []color.Color {
 	return objs
 }
 
-func CreateFormInputFields(items []string, getTitle func(item string) string) []gimme.Field {
+func CreateFormInputFields(
+	items []string,
+	getTitle func(item string) string,
+	validate func(value string, input *gimme.Input) error,
+) []gimme.Field {
+
 	fields := make([]gimme.Field, len(items))
 
 	for index, name := range items {
@@ -34,17 +36,7 @@ func CreateFormInputFields(items []string, getTitle func(item string) string) []
 			Title(getTitle(name)).
 			Inline(true).
 			Prompt(": ").
-			Validate(func(inputValue string) error {
-				if strings.TrimSpace(inputValue) == "" {
-					return nil
-				}
-
-				_, err := strconv.Atoi(inputValue)
-				if err != nil {
-					return errors.New("Please enter a valid number or leave blank")
-				}
-				return err
-			})
+			Validate(validate)
 	}
 
 	return fields

@@ -3,7 +3,6 @@ package screen
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -28,10 +27,7 @@ func NewSellScreen(inventory map[string]int, marketPrices map[string]int) *SellS
 }
 
 func (s *SellScreen) View() tea.View {
-	var sb strings.Builder
-	sb.WriteString("Sell Order:\n")
-	sb.WriteString(s.form.View().Content)
-	return tea.NewView(style.Render(sb.String()))
+	return tea.NewView(style.Render(s.form.View().Content))
 }
 
 func (s *SellScreen) Init() tea.Cmd {
@@ -49,7 +45,9 @@ func (s *SellScreen) Init() tea.Cmd {
 		}
 	}
 
-	// TODO: handle case where inventory is empty. Currently results in a panic crash
+	if items == nil {
+		items = []string{}
+	}
 
 	slices.Sort(items)
 
@@ -58,11 +56,17 @@ func (s *SellScreen) Init() tea.Cmd {
 		func(name string) string {
 			return fmt.Sprintf("Item: %v; Price: %v; # Available: %v",
 				name, util.FormatMoney(s.marketPrices[name]), s.inventory[name])
+		},
+		func(value string, input *gimme.Input) error {
+			maxRange := s.inventory[input.GetKey()]
+			return gimme.ValidateNumberStringInRange(value, 0, maxRange)
 		})
 
-	s.form = gimme.NewForm(gimme.NewGroup(inputFields...)).
-		WithShowHelp(true).
+	group := gimme.NewGroup(inputFields...).Title("Sell Order:")
+
+	s.form = gimme.NewForm(group).
 		WithKeyMap(keyMap).
+		WithShowHelp(true).
 		WithShowErrors(true)
 
 	return s.form.Init()
@@ -77,7 +81,6 @@ func (s *SellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if s.form.State == gimme.StateAborted {
 		s.OnAborted()
 	} else if s.form.State == gimme.StateCompleted {
-		// TODO: need validation to enforce selling up to max of inventory
 		inputValues := s.form.GetValuesInt()
 		s.OnComplete(inputValues)
 	}

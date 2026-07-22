@@ -98,9 +98,13 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd := gd.initBuyScreen()
 				cmds = append(cmds, cmd)
 			case "s", "S":
-				gd.showScreen = ScreenSell
-				cmd := gd.initSellScreen()
-				cmds = append(cmds, cmd)
+				if gd.player.isInventoryEmpty() {
+					gd.toast.SetMessage("Inventory is empty. Nothing to sell.")
+				} else {
+					gd.showScreen = ScreenSell
+					cmd := gd.initSellScreen()
+					cmds = append(cmds, cmd)
+				}
 			case "u", "U":
 				gd.showScreen = ScreenMain
 				unlockItem(gd)
@@ -327,4 +331,13 @@ func getActionsBar(player *Player) string {
 		BorderForeground(lipgloss.Color("#04B575"))
 
 	return styleActionsBar.Render(sbContent.String())
+}
+
+func (p *Player) isInventoryEmpty() bool {
+	for _, count := range p.inventory {
+		if count > 0 {
+			return false
+		}
+	}
+	return true
 }

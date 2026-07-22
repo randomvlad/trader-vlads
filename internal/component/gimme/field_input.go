@@ -29,7 +29,7 @@ type Input struct {
 	textinput textinput.Model
 
 	inline   bool
-	validate func(string) error
+	validate func(string, *Input) error
 	err      error
 	focused  bool
 
@@ -53,7 +53,7 @@ func NewInput() *Input {
 	i := &Input{
 		accessor:    &huh.EmbeddedAccessor[string]{},
 		textinput:   input,
-		validate:    func(string) error { return nil },
+		validate:    func(string, *Input) error { return nil },
 		id:          nextID(),
 		title:       Eval[string]{cache: make(map[uint64]string)},
 		description: Eval[string]{cache: make(map[uint64]string)},
@@ -189,19 +189,25 @@ func (i *Input) Inline(inline bool) *Input {
 }
 
 // Validate sets the validation function of the input field.
-func (i *Input) Validate(validate func(string) error) *Input {
+func (i *Input) Validate(validate func(string, *Input) error) *Input {
 	i.validate = validate
 	return i
 }
 
 // Error returns the error of the input field.
-func (i *Input) Error() error { return i.err }
+func (i *Input) Error() error {
+	return i.err
+}
 
 // Skip returns whether the input should be skipped or should be blocking.
-func (*Input) Skip() bool { return false }
+func (*Input) Skip() bool {
+	return false
+}
 
 // Zoom returns whether the input should be zoomed.
-func (*Input) Zoom() bool { return false }
+func (*Input) Zoom() bool {
+	return false
+}
 
 // Focus focuses the input field.
 func (i *Input) Focus() tea.Cmd {
@@ -214,7 +220,7 @@ func (i *Input) Blur() tea.Cmd {
 	i.focused = false
 	i.accessor.Set(i.textinput.Value())
 	i.textinput.Blur()
-	i.err = i.validate(i.accessor.Get())
+	i.err = i.validate(i.accessor.Get(), i)
 	return nil
 }
 
@@ -311,7 +317,7 @@ func (i *Input) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, PrevField)
 		case key.Matches(msg, i.keymap.Next, i.keymap.Submit):
 			value := i.textinput.Value()
-			i.err = i.validate(value)
+			i.err = i.validate(value, i)
 			if i.err != nil {
 				return i, nil
 			}

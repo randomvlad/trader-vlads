@@ -52,9 +52,6 @@ var ErrUserAborted = errors.New("user aborted")
 // ErrTimeout is the error returned when the timeout is reached.
 var ErrTimeout = errors.New("timeout")
 
-// ErrTimeoutUnsupported is the error returned when timeout is used while in accessible mode.
-var ErrTimeoutUnsupported = errors.New("timeout is not supported in accessible mode")
-
 // Form is a collection of groups that are displayed one at a time on a "page".
 //
 // The form can navigate between groups and is complete once all the groups are

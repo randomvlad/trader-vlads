@@ -3,8 +3,6 @@ package screen
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -47,26 +45,11 @@ func (b *BuyScreen) Init() tea.Cmd {
 		b.marketItems,
 		func(name string) string {
 			return fmt.Sprintf("Item: %v; Price: %v", name, util.FormatMoney(b.marketPrices[name]))
+		},
+		func(value string, input *gimme.Input) error {
+			maxRange := b.money / b.marketPrices[input.GetKey()]
+			return gimme.ValidateNumberStringInRange(value, 0, maxRange)
 		})
-
-	// Add min/max quantity validation on each input field
-	for _, field := range inputFields {
-		field.(*gimme.Input).Validate(func(inputValue string) error {
-			if strings.TrimSpace(inputValue) == "" {
-				return nil
-			}
-
-			minRange := 0
-			maxRange := b.money / b.marketPrices[field.GetKey()]
-
-			quantity, err := strconv.Atoi(inputValue)
-			if err != nil || quantity < minRange || quantity > maxRange {
-				return errors.New(fmt.Sprintf("Invalid value. Enter a number between %v - %v or leave blank", minRange, maxRange))
-			}
-
-			return nil
-		})
-	}
 
 	group := gimme.NewGroup(inputFields...).
 		Title("Purchase Order:").
