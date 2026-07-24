@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"maps"
-	"math/rand/v2"
 	"slices"
 	"strings"
 
@@ -16,12 +15,12 @@ import (
 )
 
 func NewGame() *GameData {
-	player := createPlayer()
-	turn := getTurnData(player)
+	market := NewMarket()
+	player := NewPlayer(market)
 
 	return &GameData{
 		player:     player,
-		turn:       turn,
+		market:     market,
 		showScreen: ScreenMain,
 		toast:      toast.Model{},
 		status:     status.New(),
@@ -35,7 +34,7 @@ func (gd *GameData) Init() tea.Cmd {
 func (gd *GameData) View() tea.View {
 	var sbContent strings.Builder
 
-	sbContent.WriteString(gd.status.Render(gd.player.week, gd.player.money))
+	sbContent.WriteString(gd.status.Render(gd.market.week, gd.player.money))
 
 	stylePanel := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#04B575")).
@@ -46,7 +45,7 @@ func (gd *GameData) View() tea.View {
 		BorderForeground(lipgloss.Color("#04B575"))
 
 	viewInventory := stylePanel.Render(getViewInventory(gd.player))
-	viewMarket := stylePanel.Render(getViewMarket(gd.turn))
+	viewMarket := stylePanel.Render(getViewMarket(gd.market))
 
 	sbContent.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, viewInventory, viewMarket) + "\n")
 
@@ -91,8 +90,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "n", "N":
 				gd.showScreen = ScreenMain
-				gd.player.week++
-				gd.turn = getTurnData(gd.player)
+				gd.market.NextWeek()
 			case "b", "B":
 				gd.showScreen = ScreenBuy
 				cmd := gd.initBuyScreen()
@@ -123,7 +121,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (g *GameData) initBuyScreen() tea.Cmd {
-	buyScreen := screen.NewBuyScreen(g.turn.MarketItems, g.turn.MarketPrices, g.player.money)
+	buyScreen := screen.NewBuyScreen(g.market.GetCurrentPrices(), g.player.money)
 
 	buyScreen.OnAborted = func() {
 		g.showScreen = ScreenMain
@@ -137,7 +135,7 @@ func (g *GameData) initBuyScreen() tea.Cmd {
 				continue
 			}
 
-			cost := g.turn.MarketPrices[item] * quantity
+			cost := g.market.items[item].priceCurrent * quantity
 			g.player.money -= cost
 			g.player.inventory[item] += quantity
 		}
@@ -149,7 +147,7 @@ func (g *GameData) initBuyScreen() tea.Cmd {
 }
 
 func (g *GameData) initSellScreen() tea.Cmd {
-	sellScreen := screen.NewSellScreen(g.player.inventory, g.turn.MarketPrices)
+	sellScreen := screen.NewSellScreen(g.player.inventory, g.market.GetCurrentPrices())
 
 	sellScreen.OnAborted = func() {
 		g.showScreen = ScreenMain
@@ -163,7 +161,7 @@ func (g *GameData) initSellScreen() tea.Cmd {
 				continue
 			}
 
-			cost := g.turn.MarketPrices[item] * quantity
+			cost := g.market.items[item].priceCurrent * quantity
 			g.player.money += cost
 			g.player.inventory[item] -= quantity
 		}
@@ -172,26 +170,6 @@ func (g *GameData) initSellScreen() tea.Cmd {
 	g.screenSell = sellScreen
 
 	return g.screenSell.Init()
-}
-
-func getTurnData(player *Player) *TurnData {
-
-	randomItemIndices := rand.Perm(len(player.activeItems))[:5]
-
-	marketPrices := make(map[string]int)
-	for _, randomIndex := range randomItemIndices {
-		itemName := player.activeItems[randomIndex]
-		itemPrice := rand.IntN(41) + 10
-
-		marketPrices[itemName] = itemPrice
-	}
-
-	marketItems := slices.Sorted(maps.Keys(marketPrices))
-
-	return &TurnData{
-		MarketItems:  marketItems,
-		MarketPrices: marketPrices,
-	}
 }
 
 func getViewInventory(player *Player) string {
@@ -213,94 +191,37 @@ func getViewInventory(player *Player) string {
 	return view
 }
 
-func getViewMarket(td *TurnData) string {
+func getViewMarket(m *Market) string {
 	view := "Local Market:\n"
-	for _, name := range td.MarketItems {
-		view += fmt.Sprintf(" %v: %v \n", name, util.FormatMoney(td.MarketPrices[name]))
+
+	prices := m.GetCurrentPrices()
+	items := slices.Sorted(maps.Keys(m.items))
+
+	for _, item := range items {
+		view += fmt.Sprintf(" %v: %v \n", item, util.FormatMoney(prices[item]))
 	}
 	return view
 }
 
 func unlockItem(gd *GameData) {
 	player := gd.player
-	if len(player.lockedItems) == 0 {
+	if len(gd.market.lockedItems) == 0 {
 		gd.toast.SetMessage("You have already unlocked all items.")
 		return
 	}
 
-	if player.money < player.unlockCost {
+	if player.money < gd.market.unlockCost {
 		gd.toast.SetMessage("You don't have enough to unlock a new item. Stop being poor!")
 		return
 	}
 
-	player.money -= player.unlockCost
-	unlockedItem := player.lockedItems[0]
-	player.lockedItems = slices.Delete(player.lockedItems, 0, 1)
-	player.activeItems = append(player.activeItems, unlockedItem)
-	player.inventory[unlockedItem] = 0
+	player.money -= gd.market.unlockCost
+	unlockedItem := gd.market.lockedItems[0]
+	// TODO: needs to be implemented in market.go
+	// player.lockedItems = slices.Delete(gd.market.lockedItems, 0, 1)
+	player.inventory[unlockedItem.name] = 0
 
 	gd.toast.SetMessage("New guild permit secured: %v", unlockedItem)
-}
-
-func createPlayer() *Player {
-
-	player := Player{
-		money:      1000,
-		week:       1,
-		unlockCost: 9,
-		activeItems: []string{
-			"Wood",
-			"Iron",
-			"Wheat",
-			"Cloth",
-			"Leather",
-			"Coal",
-			"Copper",
-			"Stone",
-			"Salt",
-			"Glass",
-			"Ale",
-			"Rations",
-			"Torches",
-			"Herbs",
-			"Arrows",
-		},
-		lockedItems: []string{
-			"Silver",
-			"Gold",
-			"Gems",
-			"Potions",
-			"Scrolls",
-			"Holy Water",
-			"Mithril",
-			"Adamantine",
-			"Elven Silk",
-			"Dragon Scales",
-			"Magic Wands",
-			"Spellbooks",
-			"Troll Blood",
-			"Phoenix Feathers",
-			"Unicorn Horns",
-			"Vorpal Blades",
-			"Philosopher's Stone",
-		},
-		actions: []string{
-			"Buy",
-			"Sell",
-			"Next Week",
-			"Unlock Item",
-			"Quit",
-		},
-		actionIndex: 0,
-	}
-
-	inventory := make(map[string]int)
-	for _, name := range player.activeItems {
-		inventory[name] = 0
-	}
-	player.inventory = inventory
-
-	return &player
 }
 
 func getActionsBar(player *Player) string {
@@ -331,13 +252,4 @@ func getActionsBar(player *Player) string {
 		BorderForeground(lipgloss.Color("#04B575"))
 
 	return styleActionsBar.Render(sbContent.String())
-}
-
-func (p *Player) isInventoryEmpty() bool {
-	for _, count := range p.inventory {
-		if count > 0 {
-			return false
-		}
-	}
-	return true
 }

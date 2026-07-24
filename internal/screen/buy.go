@@ -3,6 +3,8 @@ package screen
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -12,19 +14,17 @@ import (
 )
 
 type BuyScreen struct {
-	form         *gimme.Form
-	marketItems  []string
-	marketPrices map[string]int
-	money        int
-	OnAborted    func()
-	OnComplete   func(map[string]int)
+	form        *gimme.Form
+	marketItems map[string]int
+	money       int
+	OnAborted   func()
+	OnComplete  func(map[string]int)
 }
 
-func NewBuyScreen(marketItems []string, marketPrices map[string]int, money int) *BuyScreen {
+func NewBuyScreen(marketItems map[string]int, money int) *BuyScreen {
 	return &BuyScreen{
-		marketItems:  marketItems,
-		marketPrices: marketPrices,
-		money:        money,
+		marketItems: marketItems,
+		money:       money,
 	}
 }
 
@@ -41,13 +41,15 @@ func (b *BuyScreen) Init() tea.Cmd {
 
 	// Future note: "enter" key submits the form when on last field. Want a more convenient and faster way to submit form. Allow to hit enter at any point
 
+	items := slices.Sorted(maps.Keys(b.marketItems))
+
 	inputFields := util.CreateFormInputFields(
-		b.marketItems,
+		items,
 		func(name string) string {
-			return fmt.Sprintf("Item: %v; Price: %v", name, util.FormatMoney(b.marketPrices[name]))
+			return fmt.Sprintf("Item: %v; Price: %v", name, util.FormatMoney(b.marketItems[name]))
 		},
 		func(value string, input *gimme.Input) error {
-			maxRange := b.money / b.marketPrices[input.GetKey()]
+			maxRange := b.money / b.marketItems[input.GetKey()]
 			return gimme.ValidateNumberStringInRange(value, 0, maxRange)
 		})
 
@@ -56,7 +58,7 @@ func (b *BuyScreen) Init() tea.Cmd {
 		WithValidation(func(group *gimme.Group) error {
 			totalCost := 0
 			for item, quantity := range group.GetValuesInt() {
-				totalCost += b.marketPrices[item] * quantity
+				totalCost += b.marketItems[item] * quantity
 			}
 			if totalCost > b.money {
 				return errors.New(fmt.Sprintf("Requested purchase costs %v and exceeds available funds", util.FormatMoney(totalCost)))

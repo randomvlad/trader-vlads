@@ -8,6 +8,7 @@ import (
 
 type GameData struct {
 	player     *Player
+	market     *Market
 	turn       *TurnData
 	toast      toast.Model
 	status     status.Model
@@ -17,19 +18,7 @@ type GameData struct {
 }
 
 type TurnData struct {
-	MarketItems  []string
-	MarketPrices map[string]int
-}
-
-type Player struct {
-	money       int
-	week        int
-	inventory   map[string]int
-	activeItems []string
-	unlockCost  int
-	lockedItems []string
-	actions     []string
-	actionIndex int
+	// Note: keeping around for now
 }
 
 type Screen int

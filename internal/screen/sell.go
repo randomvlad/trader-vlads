@@ -12,17 +12,17 @@ import (
 )
 
 type SellScreen struct {
-	form         *gimme.Form
-	inventory    map[string]int
-	marketPrices map[string]int
-	OnAborted    func()
-	OnComplete   func(map[string]int)
+	form        *gimme.Form
+	inventory   map[string]int
+	marketItems map[string]int
+	OnAborted   func()
+	OnComplete  func(map[string]int)
 }
 
-func NewSellScreen(inventory map[string]int, marketPrices map[string]int) *SellScreen {
+func NewSellScreen(inventory map[string]int, marketItems map[string]int) *SellScreen {
 	return &SellScreen{
-		inventory:    inventory,
-		marketPrices: marketPrices,
+		inventory:   inventory,
+		marketItems: marketItems,
 	}
 }
 
@@ -55,7 +55,7 @@ func (s *SellScreen) Init() tea.Cmd {
 		items,
 		func(name string) string {
 			return fmt.Sprintf("Item: %v; Price: %v; # Available: %v",
-				name, util.FormatMoney(s.marketPrices[name]), s.inventory[name])
+				name, util.FormatMoney(s.marketItems[name]), s.inventory[name])
 		},
 		func(value string, input *gimme.Input) error {
 			maxRange := s.inventory[input.GetKey()]
