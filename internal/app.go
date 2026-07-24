@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -121,7 +122,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (g *GameData) initBuyScreen() tea.Cmd {
-	buyScreen := screen.NewBuyScreen(g.market.GetCurrentPrices(), g.player.money)
+	buyScreen := screen.NewBuyScreen(g.market.GetPricesCurrent(), g.player.money)
 
 	buyScreen.OnAborted = func() {
 		g.showScreen = ScreenMain
@@ -147,7 +148,7 @@ func (g *GameData) initBuyScreen() tea.Cmd {
 }
 
 func (g *GameData) initSellScreen() tea.Cmd {
-	sellScreen := screen.NewSellScreen(g.player.inventory, g.market.GetCurrentPrices())
+	sellScreen := screen.NewSellScreen(g.player.inventory, g.market.GetPricesCurrent())
 
 	sellScreen.OnAborted = func() {
 		g.showScreen = ScreenMain
@@ -192,13 +193,34 @@ func getViewInventory(player *Player) string {
 }
 
 func getViewMarket(m *Market) string {
-	view := "Local Market:\n"
+	view := "Market:\n"
 
-	prices := m.GetCurrentPrices()
-	items := slices.Sorted(maps.Keys(m.items))
+	itemNames := slices.Sorted(maps.Keys(m.items))
 
-	for _, item := range items {
-		view += fmt.Sprintf(" %v: %v \n", item, util.FormatMoney(prices[item]))
+	for _, name := range itemNames {
+		item := m.items[name]
+
+		priceChange := item.priceCurrent - m.GetPricePrevious(name)
+
+		var changeStyle lipgloss.Style
+		var changeDisplay string
+		if priceChange > 0 {
+			changeDisplay = "↑ " + strconv.Itoa(priceChange)
+			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#8FBC8B"))
+		} else if priceChange < 0 {
+			changeDisplay = "↓ " + strconv.Itoa(priceChange)
+			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#CD5C5C"))
+		} else {
+			changeDisplay = "± 0"
+			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#D3D3D3"))
+		}
+
+		view += fmt.Sprintf(
+			" %v: %v (%v)\n",
+			name,
+			util.FormatMoney(item.priceCurrent),
+			changeStyle.Render(changeDisplay),
+		)
 	}
 	return view
 }

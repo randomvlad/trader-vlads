@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"image/color"
+	"math/rand/v2"
 
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/component/gimme"
@@ -40,4 +41,19 @@ func CreateFormInputFields(
 	}
 
 	return fields
+}
+
+func RandomGain(value, gainNegativePercCap, gainPositivePercCap, valueMin, valueMax int) int {
+
+	randomMaxExclusive := gainNegativePercCap + gainPositivePercCap + 1
+	percentChange := rand.IntN(randomMaxExclusive) - gainNegativePercCap
+
+	multiplier := 1.0 + (float64(percentChange) / 100.0)
+	newValue := int(float64(value) * multiplier)
+
+	return Clamp(newValue, valueMin, valueMax)
+}
+
+func Clamp(value, low, high int) int {
+	return max(low, min(value, high))
 }

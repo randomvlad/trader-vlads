@@ -1,8 +1,10 @@
 package internal
 
+import "github.com/randomvlad/trader-vlads/internal/util"
+
 type Market struct {
 	week        int
-	items       map[string]ResourceItem
+	items       map[string]*ResourceItem
 	unlockCost  int
 	lockedItems []*ResourceItem
 }
@@ -33,7 +35,7 @@ func NewMarket() *Market {
 
 	return &Market{
 		week: 1,
-		items: map[string]ResourceItem{
+		items: map[string]*ResourceItem{
 			"Wood":    NewResourceItem("Wood", 10, 50),
 			"Stone":   NewResourceItem("Stone", 10, 40),
 			"Coal":    NewResourceItem("Coal", 10, 50),
@@ -48,8 +50,8 @@ func NewMarket() *Market {
 	}
 }
 
-func NewResourceItem(name string, priceRangeMin, priceRangeMax int) ResourceItem {
-	item := ResourceItem{
+func NewResourceItem(name string, priceRangeMin, priceRangeMax int) *ResourceItem {
+	item := &ResourceItem{
 		name:              name,
 		priceRangeMin:     priceRangeMin,
 		priceRangeMax:     priceRangeMax,
@@ -66,10 +68,15 @@ func NewResourceItem(name string, priceRangeMin, priceRangeMax int) ResourceItem
 
 func (m *Market) NextWeek() {
 	m.week = m.week + 1
-	// TODO: update prices
+
+	for _, item := range m.items {
+		newPrice := util.RandomGain(item.priceCurrent, item.gainNegativeCap, item.gainPositiveCap, item.priceRangeMin, item.priceRangeMax)
+		item.priceCurrent = newPrice
+		item.priceHistory = append(item.priceHistory, newPrice)
+	}
 }
 
-func (m *Market) GetCurrentPrices() map[string]int {
+func (m *Market) GetPricesCurrent() map[string]int {
 	currentPrices := make(map[string]int, len(m.items))
 
 	for _, item := range m.items {
@@ -79,21 +86,11 @@ func (m *Market) GetCurrentPrices() map[string]int {
 	return currentPrices
 }
 
-//func getTurnData(player *Player) *TurnData {
-//
-//	randomItemIndices := rand.Perm(len(player.activeItems))[:5]
-//
-//	marketPrices := make(map[string]int)
-//	for _, randomIndex := range randomItemIndices {
-//		itemName := player.activeItems[randomIndex]
-//		itemPrice := rand.IntN(41) + 10
-//
-//		marketPrices[itemName] = itemPrice
-//	}
-//
-//	marketItems := slices.Sorted(maps.Keys(marketPrices))
-//
-//	return &TurnData{
-//
-//	}
-//}
+func (m *Market) GetPricePrevious(itemName string) int {
+	item := m.items[itemName]
+	if len(item.priceHistory) == 1 {
+		return item.priceHistory[0]
+	}
+
+	return item.priceHistory[len(item.priceHistory)-2]
+}
