@@ -1,6 +1,10 @@
 package internal
 
-import "github.com/randomvlad/trader-vlads/internal/util"
+import (
+	"slices"
+
+	"github.com/randomvlad/trader-vlads/internal/util"
+)
 
 type Market struct {
 	week        int
@@ -21,18 +25,6 @@ type ResourceItem struct {
 }
 
 func NewMarket() *Market {
-
-	//lockedItems: []string{
-	//	"Emerald",
-	//	"Diamond",
-	//	"Purple Elixir",
-	//	"Dark Elixir",
-	//	"Mithril",
-	//	"Adamantine",
-	//	"Elven Silk",
-	//	"Dragon Scales", // future idea: rare items have limited supply. Some turns available quantity will be low or zero.
-	//},
-
 	return &Market{
 		week: 1,
 		items: map[string]*ResourceItem{
@@ -45,8 +37,15 @@ func NewMarket() *Market {
 			"Iron":    NewResourceItem("Iron", 20, 100),
 			"Glass":   NewResourceItem("Glass", 30, 200),
 		},
-		unlockCost:  100,
-		lockedItems: []*ResourceItem{}, // TODO: tackle later
+		unlockCost: 100,
+		lockedItems: []*ResourceItem{
+			NewResourceItem("Emerald", 40, 250),
+			NewResourceItem("Diamond", 100, 200),
+			NewResourceItem("Purple Elixir", 30, 400),
+			NewResourceItem("Mithril", 50, 500),
+			NewResourceItem("Dragon Scales", 500, 1000), // future idea: rare items have limited supply. Some turns available quantity will be low or zero.
+			NewResourceItem("Dark Elixir", 100, 5000),
+		},
 	}
 }
 
@@ -93,4 +92,17 @@ func (m *Market) GetPricePrevious(itemName string) int {
 	}
 
 	return item.priceHistory[len(item.priceHistory)-2]
+}
+
+func (m *Market) UnlockItem() *ResourceItem {
+	if len(m.lockedItems) == 0 {
+		return nil
+	}
+
+	unlockedItem := m.lockedItems[0]
+	m.lockedItems = slices.Delete(m.lockedItems, 0, 1)
+
+	m.items[unlockedItem.name] = unlockedItem
+
+	return unlockedItem
 }

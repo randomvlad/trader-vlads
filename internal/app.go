@@ -238,12 +238,11 @@ func unlockItem(gd *GameData) {
 	}
 
 	player.money -= gd.market.unlockCost
-	unlockedItem := gd.market.lockedItems[0]
-	// TODO: needs to be implemented in market.go
-	// player.lockedItems = slices.Delete(gd.market.lockedItems, 0, 1)
-	player.inventory[unlockedItem.name] = 0
-
-	gd.toast.SetMessage("New guild permit secured: %v", unlockedItem)
+	unlockedItem := gd.market.UnlockItem()
+	if unlockedItem != nil {
+		player.inventory[unlockedItem.name] = 0
+		gd.toast.SetMessage("New guild permit secured: %v", unlockedItem.name)
+	}
 }
 
 func getActionsBar(player *Player) string {
