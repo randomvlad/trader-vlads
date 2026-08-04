@@ -11,6 +11,7 @@ type Market struct {
 	items       map[string]*ResourceItem
 	unlockCost  int
 	lockedItems []*ResourceItem
+	random      *util.RandomGenerator
 }
 
 type ResourceItem struct {
@@ -24,7 +25,7 @@ type ResourceItem struct {
 	availableQuantity int
 }
 
-func NewMarket() *Market {
+func NewMarket(r *util.RandomGenerator) *Market {
 	return &Market{
 		week: 1,
 		items: map[string]*ResourceItem{
@@ -46,6 +47,7 @@ func NewMarket() *Market {
 			NewResourceItem("Dragon Scales", 500, 1000), // future idea: rare items have limited supply. Some turns available quantity will be low or zero.
 			NewResourceItem("Dark Elixir", 100, 5000),
 		},
+		random: r,
 	}
 }
 
@@ -69,7 +71,7 @@ func (m *Market) NextWeek() {
 	m.week = m.week + 1
 
 	for _, item := range m.items {
-		newPrice := util.RandomGain(item.priceCurrent, item.gainNegativeCap, item.gainPositiveCap, item.priceRangeMin, item.priceRangeMax)
+		newPrice := m.random.RandomGain(item.priceCurrent, item.gainNegativeCap, item.gainPositiveCap, item.priceRangeMin, item.priceRangeMax)
 		item.priceCurrent = newPrice
 		item.priceHistory = append(item.priceHistory, newPrice)
 	}

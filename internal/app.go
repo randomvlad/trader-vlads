@@ -16,12 +16,15 @@ import (
 )
 
 func NewGame() *GameData {
-	market := NewMarket()
+	random := util.NewRandomGenerator(nil)
+
+	market := NewMarket(random)
 	player := NewPlayer(market)
 
 	return &GameData{
 		player:     player,
 		market:     market,
+		eventTrack: NewEventTracker(random),
 		showScreen: ScreenMain,
 		toast:      toast.Model{},
 		status:     status.New(),
@@ -92,6 +95,13 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "n", "N":
 				gd.showScreen = ScreenMain
 				gd.market.NextWeek()
+				gd.toast.Clear()
+
+				event := gd.eventTrack.getRandomEvent()
+				if event != nil {
+					gd.toast.SetMessage(event.name + "\n\n" + event.description)
+					gd.player.money += event.money
+				}
 			case "b", "B":
 				gd.showScreen = ScreenBuy
 				cmd := gd.initBuyScreen()

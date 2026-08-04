@@ -9,6 +9,7 @@ import (
 type GameData struct {
 	player     *Player
 	market     *Market
+	eventTrack *EventTracker
 	turn       *TurnData
 	toast      toast.Model
 	status     status.Model
