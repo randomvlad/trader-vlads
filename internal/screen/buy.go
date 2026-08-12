@@ -14,17 +14,17 @@ import (
 )
 
 type BuyScreen struct {
-	form        *gimme.Form
-	marketItems map[string]int
-	money       int
-	OnAborted   func()
-	OnComplete  func(map[string]int)
+	form         *gimme.Form
+	marketPrices map[string]int
+	money        int
+	OnAborted    func()
+	OnComplete   func(map[string]int)
 }
 
-func NewBuyScreen(marketItems map[string]int, money int) *BuyScreen {
+func NewBuyScreen(marketPrices map[string]int, money int) *BuyScreen {
 	return &BuyScreen{
-		marketItems: marketItems,
-		money:       money,
+		marketPrices: marketPrices,
+		money:        money,
 	}
 }
 
@@ -41,15 +41,15 @@ func (b *BuyScreen) Init() tea.Cmd {
 
 	// Future note: "enter" key submits the form when on last field. Want a more convenient and faster way to submit form. Allow to hit enter at any point
 
-	items := slices.Sorted(maps.Keys(b.marketItems))
+	items := slices.Sorted(maps.Keys(b.marketPrices))
 
 	inputFields := util.CreateFormInputFields(
 		items,
 		func(name string) string {
-			return fmt.Sprintf("Item: %v; Price: %v", name, util.FormatMoney(b.marketItems[name]))
+			return fmt.Sprintf("Item: %v; Price: %v", name, util.FormatMoney(b.marketPrices[name]))
 		},
 		func(value string, input *gimme.Input) error {
-			maxRange := b.money / b.marketItems[input.GetKey()]
+			maxRange := b.money / b.marketPrices[input.GetKey()]
 			return gimme.ValidateNumberStringInRange(value, 0, maxRange)
 		})
 
@@ -58,7 +58,7 @@ func (b *BuyScreen) Init() tea.Cmd {
 		WithValidation(func(group *gimme.Group) error {
 			totalCost := 0
 			for item, quantity := range group.GetValuesInt() {
-				totalCost += b.marketItems[item] * quantity
+				totalCost += b.marketPrices[item] * quantity
 			}
 			if totalCost > b.money {
 				return errors.New(fmt.Sprintf("Requested purchase costs %v and exceeds available funds", util.FormatMoney(totalCost)))

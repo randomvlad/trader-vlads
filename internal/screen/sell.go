@@ -12,17 +12,17 @@ import (
 )
 
 type SellScreen struct {
-	form        *gimme.Form
-	inventory   map[string]int
-	marketItems map[string]int
-	OnAborted   func()
-	OnComplete  func(map[string]int)
+	form               *gimme.Form
+	warehouseResources map[string]int
+	marketPrices       map[string]int
+	OnAborted          func()
+	OnComplete         func(map[string]int)
 }
 
-func NewSellScreen(inventory map[string]int, marketItems map[string]int) *SellScreen {
+func NewSellScreen(resources map[string]int, marketPrices map[string]int) *SellScreen {
 	return &SellScreen{
-		inventory:   inventory,
-		marketItems: marketItems,
+		warehouseResources: resources,
+		marketPrices:       marketPrices,
 	}
 }
 
@@ -39,7 +39,7 @@ func (s *SellScreen) Init() tea.Cmd {
 	// Future note: "enter" key submits the form when on last field. Want a more convenient and faster way to submit form. Allow to hit enter at any point
 
 	var items []string
-	for item, quantity := range s.inventory {
+	for item, quantity := range s.warehouseResources {
 		if quantity > 0 {
 			items = append(items, item)
 		}
@@ -55,10 +55,10 @@ func (s *SellScreen) Init() tea.Cmd {
 		items,
 		func(name string) string {
 			return fmt.Sprintf("Item: %v; Price: %v; # Available: %v",
-				name, util.FormatMoney(s.marketItems[name]), s.inventory[name])
+				name, util.FormatMoney(s.marketPrices[name]), s.warehouseResources[name])
 		},
 		func(value string, input *gimme.Input) error {
-			maxRange := s.inventory[input.GetKey()]
+			maxRange := s.warehouseResources[input.GetKey()]
 			return gimme.ValidateNumberStringInRange(value, 0, maxRange)
 		})
 

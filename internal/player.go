@@ -2,37 +2,41 @@ package internal
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 type Player struct {
 	money     int
-	inventory map[string]int // TODO: rename to warehouse. separate struct
+	warehouse *Warehouse
 	equipment map[BodyPart]*EqObject
-	actions   []string
+	inventory []*EqObject
 }
 
 func NewPlayer(m *Market) *Player {
 
-	player := Player{
-		money:     1000,
-		inventory: make(map[string]int),
-		equipment: make(map[BodyPart]*EqObject),
-		actions: []string{ // TODO: move out of player to action bar component
-			"Buy",
-			"Sell",
-			"Next Week",
-			"Unlock Item",
-			"Quit",
-		},
+	warehouse := &Warehouse{
+		capacity:  100,
+		resources: make(map[string]int),
 	}
 
-	for _, item := range m.items {
-		player.inventory[item.name] = 0
+	player := Player{
+		money:     1000,
+		warehouse: warehouse,
+		equipment: make(map[BodyPart]*EqObject),
+		inventory: []*EqObject{},
+	}
+
+	for _, item := range m.resources {
+		player.warehouse.resources[item.name] = 0
 	}
 
 	for _, eqObject := range getEqStarterSet() {
-		player.Wear(eqObject)
+		if eqObject.IsWearable() {
+			player.Wear(eqObject)
+		} else {
+			player.AddInventory(eqObject)
+		}
 	}
 
 	return &player
@@ -40,7 +44,7 @@ func NewPlayer(m *Market) *Player {
 
 type BodyPart int
 
-const ( // Homage: order reflects equipment display order in Darkmists(
+const ( // Homage: order reflects equipment display order in Darkmists
 	BodyPartFingerLeft BodyPart = iota
 	BodyPartFingerRight
 	BodyPartNeck
@@ -54,8 +58,13 @@ const ( // Homage: order reflects equipment display order in Darkmists(
 	BodyPartHoldRight
 )
 
-func (p *Player) isInventoryEmpty() bool {
-	for _, count := range p.inventory {
+type Warehouse struct {
+	capacity  int
+	resources map[string]int // Resource name → quantity
+}
+
+func (p *Player) isWarehouseEmpty() bool {
+	for _, count := range p.warehouse.resources {
 		if count > 0 {
 			return false
 		}
@@ -95,16 +104,10 @@ func (p *Player) Wear(object *EqObject) {
 }
 
 func (p *Player) wearBodyPart(bodyPart BodyPart, object *EqObject) {
-	if object == nil {
-		return
+	if object != nil {
+		p.Remove(bodyPart)
+		p.equipment[bodyPart] = object
 	}
-
-	// TODO: object eq type must match body part
-
-	// TODO: handle case of left & right finger. Also left & right hold.
-
-	p.Remove(bodyPart)
-	p.equipment[bodyPart] = object
 }
 
 func (p *Player) HasEquipment(bodyPart BodyPart) bool {
@@ -112,11 +115,14 @@ func (p *Player) HasEquipment(bodyPart BodyPart) bool {
 }
 
 func (p *Player) Remove(bodyPart BodyPart) {
-	if _ /* eqObject */, ok := p.equipment[bodyPart]; ok {
+	if eqObject, ok := p.equipment[bodyPart]; ok {
 		p.equipment[bodyPart] = nil
-		// TODO: move removed eqObject to inventory?
-		// need to separate storage of resources vs eq? warehouse vs inventory?
+		p.AddInventory(eqObject)
 	}
+}
+
+func (p *Player) AddInventory(object *EqObject) {
+	p.inventory = append(p.inventory, object)
 }
 
 func (p *Player) ViewEquipment() string {
@@ -125,10 +131,13 @@ func (p *Player) ViewEquipment() string {
 
 	view.WriteString("You are using:\n")
 
+	naked := true
 	for bodyPart := range BodyPartHoldRight {
 		if !p.HasEquipment(bodyPart) {
 			continue
 		}
+
+		naked = false
 
 		var wornOn string
 		switch bodyPart {
@@ -153,13 +162,25 @@ func (p *Player) ViewEquipment() string {
 		}
 		wornOn = "<" + wornOn + ">"
 
-		view.WriteString(fmt.Sprintf("  %-22s %s\n", wornOn, p.equipment[bodyPart].Name))
+		view.WriteString(fmt.Sprintf("     %-22s %s\n", wornOn, p.equipment[bodyPart].Name))
+	}
 
+	if naked {
+		view.WriteString("     Nothing\n")
 	}
 
 	view.WriteString("\n")
-	view.WriteString("You are carrying (0):\n")
-	view.WriteString("     Nothing\n") // TODO: implement inventory
+
+	count := len(p.inventory)
+	view.WriteString("You are carrying (" + strconv.Itoa(count) + "):\n")
+
+	if count > 0 {
+		for _, object := range p.inventory {
+			view.WriteString("     " + object.Name + "\n")
+		}
+	} else {
+		view.WriteString("     Nothing\n")
+	}
 
 	return view.String()
 }

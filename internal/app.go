@@ -53,7 +53,7 @@ func (gd *GameData) View() tea.View {
 	case 0:
 		activeTabContent = "Events History"
 	case 1:
-		activeTabContent = getViewMarket(gd.market) + "\n\n" + getViewInventory(gd.player)
+		activeTabContent = viewMarket(gd.market) + "\n\n" + viewWarehouse(gd.player)
 	case 2:
 		activeTabContent = gd.player.ViewEquipment()
 	case 3:
@@ -62,7 +62,7 @@ func (gd *GameData) View() tea.View {
 
 	sbContent.WriteString(screen.StyleTabView.Render(activeTabContent) + "\n")
 
-	sbContent.WriteString(getActionsBar(gd.player) + "\n")
+	sbContent.WriteString(getActionsBar() + "\n")
 
 	layerMain := lipgloss.NewLayer(sbContent.String())
 
@@ -116,8 +116,8 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd := gd.initBuyScreen()
 				cmds = append(cmds, cmd)
 			case "s", "S":
-				if gd.player.isInventoryEmpty() {
-					gd.toast.SetMessage("Inventory is empty. Nothing to sell.")
+				if gd.player.isWarehouseEmpty() {
+					gd.toast.SetMessage("Warehouse is empty. Nothing to sell.")
 				} else {
 					gd.showScreen = ScreenSell
 					cmd := gd.initSellScreen()
@@ -158,9 +158,9 @@ func (g *GameData) initBuyScreen() tea.Cmd {
 				continue
 			}
 
-			cost := g.market.items[item].priceCurrent * quantity
+			cost := g.market.resources[item].priceCurrent * quantity
 			g.player.money -= cost
-			g.player.inventory[item] += quantity
+			g.player.warehouse.resources[item] += quantity
 		}
 	}
 
@@ -170,7 +170,7 @@ func (g *GameData) initBuyScreen() tea.Cmd {
 }
 
 func (g *GameData) initSellScreen() tea.Cmd {
-	sellScreen := screen.NewSellScreen(g.player.inventory, g.market.GetPricesCurrent())
+	sellScreen := screen.NewSellScreen(g.player.warehouse.resources, g.market.GetPricesCurrent())
 
 	sellScreen.OnAborted = func() {
 		g.showScreen = ScreenMain
@@ -184,9 +184,9 @@ func (g *GameData) initSellScreen() tea.Cmd {
 				continue
 			}
 
-			cost := g.market.items[item].priceCurrent * quantity
+			cost := g.market.resources[item].priceCurrent * quantity
 			g.player.money += cost
-			g.player.inventory[item] -= quantity
+			g.player.warehouse.resources[item] -= quantity
 		}
 	}
 
@@ -195,12 +195,12 @@ func (g *GameData) initSellScreen() tea.Cmd {
 	return g.screenSell.Init()
 }
 
-func getViewInventory(player *Player) string {
-	view := "Inventory:\n" // TODO: rename to ware house?
+func viewWarehouse(player *Player) string {
+	view := "Your Warehouse:\n"
 	hasItems := false
-	items := slices.Sorted(maps.Keys(player.inventory))
+	items := slices.Sorted(maps.Keys(player.warehouse.resources))
 	for _, item := range items {
-		count := player.inventory[item]
+		count := player.warehouse.resources[item]
 		if count > 0 {
 			hasItems = true
 			view += fmt.Sprintf(" - %v: %v\n", item, count)
@@ -214,13 +214,13 @@ func getViewInventory(player *Player) string {
 	return view
 }
 
-func getViewMarket(m *Market) string {
+func viewMarket(m *Market) string {
 	view := "Market:\n"
 
-	itemNames := slices.Sorted(maps.Keys(m.items))
+	itemNames := slices.Sorted(maps.Keys(m.resources))
 
 	for _, name := range itemNames {
-		item := m.items[name]
+		item := m.resources[name]
 
 		priceChange := item.priceCurrent - m.GetPricePrevious(name)
 
@@ -249,8 +249,8 @@ func getViewMarket(m *Market) string {
 
 func unlockItem(gd *GameData) {
 	player := gd.player
-	if len(gd.market.lockedItems) == 0 {
-		gd.toast.SetMessage("You have already unlocked all items.")
+	if len(gd.market.lockedResources) == 0 {
+		gd.toast.SetMessage("You have already unlocked all resources.")
 		return
 	}
 
@@ -260,19 +260,27 @@ func unlockItem(gd *GameData) {
 	}
 
 	player.money -= gd.market.unlockCost
-	unlockedItem := gd.market.UnlockItem()
+	unlockedItem := gd.market.UnlockResource()
 	if unlockedItem != nil {
-		player.inventory[unlockedItem.name] = 0
-		gd.toast.SetMessage("New guild permit secured: %v", unlockedItem.name)
+		player.warehouse.resources[unlockedItem.name] = 0
+		gd.toast.SetMessage("New resource permit secured: %v", unlockedItem.name)
 	}
 }
 
-func getActionsBar(player *Player) string {
+func getActionsBar() string {
 
 	var sbContent strings.Builder
 	sbContent.WriteString("Actions: ")
 
-	for index, action := range player.actions {
+	actions := []string{
+		"Buy",
+		"Sell",
+		"Next Week",
+		"Unlock Item",
+		"Quit",
+	}
+
+	for index, action := range actions {
 		styledAction := lipgloss.StyleRanges(
 			action,
 			lipgloss.NewRange(0, 1, screen.StyleTextFirstLetter),
@@ -281,7 +289,7 @@ func getActionsBar(player *Player) string {
 
 		sbContent.WriteString(styledAction)
 
-		if index < len(player.actions)-1 {
+		if index < len(actions)-1 {
 			sbContent.WriteString(" • ")
 		}
 	}

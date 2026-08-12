@@ -18,6 +18,7 @@ const (
 	EqSlotFeet
 	EqSlotWield
 	EqSlotHold
+	EqSlotInventory
 )
 
 func getEqStarterSet() []*EqObject {
@@ -39,5 +40,13 @@ func getEqStarterSet() []*EqObject {
 			Name: "brown leather sandals",
 			Slot: EqSlotFeet,
 		},
+		{
+			Name: "a potion of Beginner's Luck 🍀",
+			Slot: EqSlotInventory,
+		},
 	}
+}
+
+func (o *EqObject) IsWearable() bool {
+	return o.Slot != EqSlotInventory
 }

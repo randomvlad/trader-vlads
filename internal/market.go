@@ -7,11 +7,11 @@ import (
 )
 
 type Market struct {
-	week        int
-	items       map[string]*ResourceItem
-	unlockCost  int
-	lockedItems []*ResourceItem
-	random      *util.RandomGenerator
+	week            int
+	resources       map[string]*ResourceItem
+	unlockCost      int
+	lockedResources []*ResourceItem
+	random          *util.RandomGenerator
 }
 
 type ResourceItem struct {
@@ -28,7 +28,7 @@ type ResourceItem struct {
 func NewMarket(r *util.RandomGenerator) *Market {
 	return &Market{
 		week: 1,
-		items: map[string]*ResourceItem{
+		resources: map[string]*ResourceItem{
 			"Wood":    NewResourceItem("Wood", 10, 50),
 			"Stone":   NewResourceItem("Stone", 10, 40),
 			"Coal":    NewResourceItem("Coal", 10, 50),
@@ -39,12 +39,12 @@ func NewMarket(r *util.RandomGenerator) *Market {
 			"Glass":   NewResourceItem("Glass", 30, 200),
 		},
 		unlockCost: 100,
-		lockedItems: []*ResourceItem{
+		lockedResources: []*ResourceItem{
 			NewResourceItem("Emerald", 40, 250),
 			NewResourceItem("Diamond", 100, 200),
 			NewResourceItem("Purple Elixir", 30, 400),
 			NewResourceItem("Mithril", 50, 500),
-			NewResourceItem("Dragon Scales", 500, 1000), // future idea: rare items have limited supply. Some turns available quantity will be low or zero.
+			NewResourceItem("Dragon Scales", 500, 1000), // future idea: rare resources have limited supply. Some turns available quantity will be low or zero.
 			NewResourceItem("Dark Elixir", 100, 5000),
 		},
 		random: r,
@@ -70,41 +70,41 @@ func NewResourceItem(name string, priceRangeMin, priceRangeMax int) *ResourceIte
 func (m *Market) NextWeek() {
 	m.week = m.week + 1
 
-	for _, item := range m.items {
-		newPrice := m.random.RandomGain(item.priceCurrent, item.gainNegativeCap, item.gainPositiveCap, item.priceRangeMin, item.priceRangeMax)
-		item.priceCurrent = newPrice
-		item.priceHistory = append(item.priceHistory, newPrice)
+	for _, r := range m.resources {
+		newPrice := m.random.RandomGain(r.priceCurrent, r.gainNegativeCap, r.gainPositiveCap, r.priceRangeMin, r.priceRangeMax)
+		r.priceCurrent = newPrice
+		r.priceHistory = append(r.priceHistory, newPrice)
 	}
 }
 
 func (m *Market) GetPricesCurrent() map[string]int {
-	currentPrices := make(map[string]int, len(m.items))
+	currentPrices := make(map[string]int, len(m.resources))
 
-	for _, item := range m.items {
+	for _, item := range m.resources {
 		currentPrices[item.name] = item.priceCurrent
 	}
 
 	return currentPrices
 }
 
-func (m *Market) GetPricePrevious(itemName string) int {
-	item := m.items[itemName]
-	if len(item.priceHistory) == 1 {
-		return item.priceHistory[0]
+func (m *Market) GetPricePrevious(resourceName string) int {
+	resource := m.resources[resourceName]
+	if len(resource.priceHistory) == 1 {
+		return resource.priceHistory[0]
 	}
 
-	return item.priceHistory[len(item.priceHistory)-2]
+	return resource.priceHistory[len(resource.priceHistory)-2]
 }
 
-func (m *Market) UnlockItem() *ResourceItem {
-	if len(m.lockedItems) == 0 {
+func (m *Market) UnlockResource() *ResourceItem {
+	if len(m.lockedResources) == 0 {
 		return nil
 	}
 
-	unlockedItem := m.lockedItems[0]
-	m.lockedItems = slices.Delete(m.lockedItems, 0, 1)
+	unlockedItem := m.lockedResources[0]
+	m.lockedResources = slices.Delete(m.lockedResources, 0, 1)
 
-	m.items[unlockedItem.name] = unlockedItem
+	m.resources[unlockedItem.name] = unlockedItem
 
 	return unlockedItem
 }
