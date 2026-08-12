@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/component/status"
+	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	"github.com/randomvlad/trader-vlads/internal/component/toast"
 	"github.com/randomvlad/trader-vlads/internal/screen"
 	"github.com/randomvlad/trader-vlads/internal/util"
@@ -26,12 +27,17 @@ func NewGame() *GameData {
 		market:     market,
 		eventTrack: NewEventTracker(random),
 		showScreen: ScreenMain,
+		tabs:       tabs.NewTabsModel(screen.AppWidth),
 		toast:      toast.Model{},
 		status:     status.New(),
 	}
 }
 
 func (gd *GameData) Init() tea.Cmd {
+
+	// TODO: think more about how to structure Init()'s
+	gd.tabs.Init()
+
 	return nil
 }
 
@@ -40,18 +46,21 @@ func (gd *GameData) View() tea.View {
 
 	sbContent.WriteString(gd.status.Render(gd.market.week, gd.player.money))
 
-	stylePanel := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#04B575")).
-		Height(15).
-		Padding(0, 2).
-		Width(50).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#04B575"))
+	sbContent.WriteString(gd.tabs.View().Content + "\n")
 
-	viewInventory := stylePanel.Render(getViewInventory(gd.player))
-	viewMarket := stylePanel.Render(getViewMarket(gd.market))
+	var activeTabContent string
+	switch gd.tabs.ActiveTab {
+	case 0:
+		activeTabContent = "Events History"
+	case 1:
+		activeTabContent = getViewMarket(gd.market) + "\n\n" + getViewInventory(gd.player)
+	case 2:
+		activeTabContent = gd.player.ViewEquipment()
+	case 3:
+		activeTabContent = "Stats"
+	}
 
-	sbContent.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, viewInventory, viewMarket) + "\n")
+	sbContent.WriteString(screen.StyleTabView.Render(activeTabContent) + "\n")
 
 	sbContent.WriteString(getActionsBar(gd.player) + "\n")
 
@@ -74,7 +83,7 @@ func (gd *GameData) View() tea.View {
 		compositor.AddLayers(layerSellFlow)
 	}
 
-	return tea.NewView(compositor.Render())
+	return tea.NewView(screen.StyleAppContainer.Render(compositor.Render()))
 }
 
 func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -117,6 +126,9 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "u", "U":
 				gd.showScreen = ScreenMain
 				unlockItem(gd)
+			case "left", "right":
+				_, cmd := gd.tabs.Update(msg)
+				cmds = append(cmds, cmd)
 			case "enter", "esc":
 				gd.toast.Clear()
 			case "q", "ctrl+c":
@@ -184,7 +196,7 @@ func (g *GameData) initSellScreen() tea.Cmd {
 }
 
 func getViewInventory(player *Player) string {
-	view := "Inventory:\n"
+	view := "Inventory:\n" // TODO: rename to ware house?
 	hasItems := false
 	items := slices.Sorted(maps.Keys(player.inventory))
 	for _, item := range items {
@@ -257,30 +269,22 @@ func unlockItem(gd *GameData) {
 
 func getActionsBar(player *Player) string {
 
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#04B575"))
-	styleFirstLetter := style.Bold(true).Underline(true)
-
 	var sbContent strings.Builder
-	sbContent.WriteString(style.Render("Actions: "))
+	sbContent.WriteString("Actions: ")
 
 	for index, action := range player.actions {
-		styledAction := lipgloss.StyleRanges(action,
-			lipgloss.NewRange(0, 1, styleFirstLetter),
-			lipgloss.NewRange(1, len(action), style),
+		styledAction := lipgloss.StyleRanges(
+			action,
+			lipgloss.NewRange(0, 1, screen.StyleTextFirstLetter),
+			lipgloss.NewRange(1, len(action), screen.NewAppStyle()),
 		)
 
 		sbContent.WriteString(styledAction)
 
 		if index < len(player.actions)-1 {
-			sbContent.WriteString(style.Render(" • "))
+			sbContent.WriteString(" • ")
 		}
 	}
 
-	styleActionsBar := lipgloss.NewStyle().
-		Width(100).
-		Padding(0, 2).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#04B575"))
-
-	return styleActionsBar.Render(sbContent.String())
+	return screen.StyleActionsBar.Render(sbContent.String())
 }

@@ -27,7 +27,7 @@ func NewSellScreen(inventory map[string]int, marketItems map[string]int) *SellSc
 }
 
 func (s *SellScreen) View() tea.View {
-	return tea.NewView(style.Render(s.form.View().Content))
+	return tea.NewView(StylePopup.Render(s.form.View().Content))
 }
 
 func (s *SellScreen) Init() tea.Cmd {

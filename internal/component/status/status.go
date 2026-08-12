@@ -4,15 +4,8 @@ import (
 	"strconv"
 
 	"charm.land/lipgloss/v2"
+	"github.com/randomvlad/trader-vlads/internal/screen"
 	"github.com/randomvlad/trader-vlads/internal/util"
-)
-
-var (
-	styleBadge = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#04B575")).
-		Padding(0, 2).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#04B575"))
 )
 
 type Model struct {
@@ -44,5 +37,5 @@ func (m *Model) Render(week, money int) string {
 }
 
 func (b *badge) render(value string) string {
-	return styleBadge.Render(b.name + ": " + value)
+	return screen.StyleBadge.Render(b.name + ": " + value)
 }

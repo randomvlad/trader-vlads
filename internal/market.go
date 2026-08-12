@@ -57,7 +57,7 @@ func NewResourceItem(name string, priceRangeMin, priceRangeMax int) *ResourceIte
 		priceRangeMin:     priceRangeMin,
 		priceRangeMax:     priceRangeMax,
 		gainNegativeCap:   25,
-		gainPositiveCap:   25,
+		gainPositiveCap:   32, // experiment: throw in 7% boost for upward mobility
 		availableQuantity: -1,
 	}
 

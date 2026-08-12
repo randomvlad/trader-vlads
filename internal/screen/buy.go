@@ -29,7 +29,7 @@ func NewBuyScreen(marketItems map[string]int, money int) *BuyScreen {
 }
 
 func (b *BuyScreen) View() tea.View {
-	return tea.NewView(style.Render(b.form.View().Content))
+	return tea.NewView(StylePopup.Render(b.form.View().Content))
 }
 
 func (b *BuyScreen) Init() tea.Cmd {

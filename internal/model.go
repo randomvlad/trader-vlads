@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/randomvlad/trader-vlads/internal/component/status"
+	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	"github.com/randomvlad/trader-vlads/internal/component/toast"
 	"github.com/randomvlad/trader-vlads/internal/screen"
 )
@@ -11,6 +12,7 @@ type GameData struct {
 	market     *Market
 	eventTrack *EventTracker
 	turn       *TurnData
+	tabs       *tabs.TabsModel
 	toast      toast.Model
 	status     status.Model
 	showScreen Screen
