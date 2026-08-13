@@ -1,9 +1,10 @@
-package screen
+package appstyle
 
 import (
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/compat"
 	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
 // TODO: requires more thought and structure how to centralize and manage app wide styles
@@ -55,6 +56,14 @@ var (
 			BorderForeground(AppBorderColor)
 
 	StyleTextFirstLetter = NewAppStyle().Bold(true).Underline(true)
+
+	blendColors = util.ToColors("#8BF578", "#6CCB5B", "#55A147", "#407C35", "#55A147", "#6CCB5B", "#8BF578")
+	StyleToast  = NewAppStyle().
+			Width(50).
+			Padding(2, 3).
+			Align(lipgloss.Center).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForegroundBlend(blendColors...)
 )
 
 func NewAppStyle() lipgloss.Style {

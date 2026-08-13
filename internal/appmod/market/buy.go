@@ -1,4 +1,4 @@
-package screen
+package market
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
+	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/gimme"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
@@ -29,7 +30,7 @@ func NewBuyScreen(marketPrices map[string]int, money int) *BuyScreen {
 }
 
 func (b *BuyScreen) View() tea.View {
-	return tea.NewView(StylePopup.Render(b.form.View().Content))
+	return tea.NewView(appstyle.StylePopup.Render(b.form.View().Content))
 }
 
 func (b *BuyScreen) Init() tea.Cmd {

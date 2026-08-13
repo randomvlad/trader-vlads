@@ -1,66 +1,92 @@
 package internal
 
 import (
-	"fmt"
-	"maps"
-	"slices"
-	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
+	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/status"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
-	"github.com/randomvlad/trader-vlads/internal/component/toast"
-	"github.com/randomvlad/trader-vlads/internal/screen"
+	toastcmp "github.com/randomvlad/trader-vlads/internal/component/toast"
 	"github.com/randomvlad/trader-vlads/internal/util"
+)
+
+type GameData struct {
+	player       *Player
+	marketModule *appmarket.MarketModule
+	eventTrack   *EventTracker
+	tabs         *tabs.TabsModel
+	toast        *toastcmp.Toast
+	status       status.Model
+}
+
+type TabId int
+
+const (
+	TabEvents TabId = iota
+	TabMarket
+	TabEquipment
+	TabStats
 )
 
 func NewGame() *GameData {
 	random := util.NewRandomGenerator(nil)
 
-	market := NewMarket(random)
+	market := appmarket.NewMarket(random)
 	player := NewPlayer(market)
+	toast := &toastcmp.Toast{}
+
+	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
 
 	return &GameData{
-		player:     player,
-		market:     market,
+		player: player,
+		marketModule: &appmarket.MarketModule{
+			Market:         market,
+			PlayerService:  player,
+			ToastMessenger: toast,
+		},
 		eventTrack: NewEventTracker(random),
-		showScreen: ScreenMain,
-		tabs:       tabs.NewTabsModel(screen.AppWidth),
-		toast:      toast.Model{},
+		tabs:       tabs.NewTabsModel(tabNames, appstyle.AppWidth),
+		toast:      toast,
 		status:     status.New(),
 	}
 }
 
 func (gd *GameData) Init() tea.Cmd {
+	var cmds []tea.Cmd
 
-	// TODO: think more about how to structure Init()'s
-	gd.tabs.Init()
+	cmdMarket := gd.marketModule.Init()
+	cmds = append(cmds, cmdMarket)
 
-	return nil
+	cmdTabs := gd.tabs.Init()
+	cmds = append(cmds, cmdTabs)
+
+	return tea.Batch(cmds...)
 }
 
 func (gd *GameData) View() tea.View {
 	var sbContent strings.Builder
 
-	sbContent.WriteString(gd.status.Render(gd.market.week, gd.player.money))
+	sbContent.WriteString(gd.status.Render(gd.marketModule.Market.Week, gd.player.money))
 
 	sbContent.WriteString(gd.tabs.View().Content + "\n")
 
 	var activeTabContent string
-	switch gd.tabs.ActiveTab {
-	case 0:
+	switch TabId(gd.tabs.ActiveTab) {
+	case TabEvents:
 		activeTabContent = "Events History"
-	case 1:
-		activeTabContent = viewMarket(gd.market) + "\n\n" + viewWarehouse(gd.player)
-	case 2:
+	case TabMarket:
+		gd.marketModule.Resources = gd.player.warehouse.resources
+		activeTabContent = gd.marketModule.View().Content
+	case TabEquipment:
 		activeTabContent = gd.player.ViewEquipment()
-	case 3:
+	case TabStats:
 		activeTabContent = "Stats"
 	}
 
-	sbContent.WriteString(screen.StyleTabView.Render(activeTabContent) + "\n")
+	sbContent.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
 
 	sbContent.WriteString(getActionsBar() + "\n")
 
@@ -73,198 +99,48 @@ func (gd *GameData) View() tea.View {
 		compositor.AddLayers(layerToast)
 	}
 
-	if gd.showScreen == ScreenBuy {
-		viewBuy := gd.screenBuy.View()
-		layerBuyFlow := lipgloss.NewLayer(viewBuy.Content).X(15).Y(3).Z(1)
-		compositor.AddLayers(layerBuyFlow)
-	} else if gd.showScreen == ScreenSell {
-		viewSell := gd.screenSell.View()
-		layerSellFlow := lipgloss.NewLayer(viewSell.Content).X(15).Y(3).Z(1)
-		compositor.AddLayers(layerSellFlow)
-	}
-
-	return tea.NewView(screen.StyleAppContainer.Render(compositor.Render()))
+	return tea.NewView(appstyle.StyleAppContainer.Render(compositor.Render()))
 }
 
 func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 
-	if gd.showScreen == ScreenBuy {
-		_, cmd := gd.screenBuy.Update(msg)
-		cmds = append(cmds, cmd)
-	} else if gd.showScreen == ScreenSell {
+	globalKeyPress := false
 
-		_, cmd := gd.screenSell.Update(msg)
-		cmds = append(cmds, cmd)
-	} else {
-		switch msg := msg.(type) {
-		case tea.KeyPressMsg:
-			switch msg.String() {
-			case "n", "N":
-				gd.showScreen = ScreenMain
-				gd.market.NextWeek()
-				gd.toast.Clear()
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "n", "N":
+			gd.marketModule.Market.NextWeek()
+			gd.toast.Clear()
 
-				event := gd.eventTrack.getRandomEvent()
-				if event != nil {
-					gd.toast.SetMessage(event.name + "\n\n" + event.description)
-					gd.player.money += event.money
-				}
-			case "b", "B":
-				gd.showScreen = ScreenBuy
-				cmd := gd.initBuyScreen()
-				cmds = append(cmds, cmd)
-			case "s", "S":
-				if gd.player.isWarehouseEmpty() {
-					gd.toast.SetMessage("Warehouse is empty. Nothing to sell.")
-				} else {
-					gd.showScreen = ScreenSell
-					cmd := gd.initSellScreen()
-					cmds = append(cmds, cmd)
-				}
-			case "u", "U":
-				gd.showScreen = ScreenMain
-				unlockItem(gd)
-			case "left", "right":
-				_, cmd := gd.tabs.Update(msg)
-				cmds = append(cmds, cmd)
-			case "enter", "esc":
-				gd.toast.Clear()
-			case "q", "ctrl+c":
-				gd.toast.SetMessage("Farewell and safe travels!")
-				return gd, tea.Quit
-			default:
-				gd.toast.SetMessage("Unknown action: %v", msg.String())
+			event := gd.eventTrack.getRandomEvent()
+			if event != nil {
+				gd.toast.Message(event.name + "\n\n" + event.description)
+				gd.player.money += event.money
 			}
+		case "left", "right":
+			_, cmd := gd.tabs.Update(msg)
+			cmds = append(cmds, cmd)
+		case "enter", "esc":
+			gd.toast.Clear()
+		case "q", "ctrl+c":
+			gd.toast.Message("Farewell and safe travels!")
+			return gd, tea.Quit
+		default:
+			globalKeyPress = false
+		}
+	}
+
+	if !globalKeyPress { // handle module bound key pressed
+		if gd.tabs.ActiveTab == 1 {
+			_, cmd := gd.marketModule.Update(msg)
+			cmds = append(cmds, cmd)
 		}
 	}
 
 	return gd, tea.Batch(cmds...)
-}
-
-func (g *GameData) initBuyScreen() tea.Cmd {
-	buyScreen := screen.NewBuyScreen(g.market.GetPricesCurrent(), g.player.money)
-
-	buyScreen.OnAborted = func() {
-		g.showScreen = ScreenMain
-	}
-
-	buyScreen.OnComplete = func(purchaseOrder map[string]int) {
-		g.showScreen = ScreenMain
-
-		for item, quantity := range purchaseOrder {
-			if quantity == 0 {
-				continue
-			}
-
-			cost := g.market.resources[item].priceCurrent * quantity
-			g.player.money -= cost
-			g.player.warehouse.resources[item] += quantity
-		}
-	}
-
-	g.screenBuy = buyScreen
-
-	return g.screenBuy.Init()
-}
-
-func (g *GameData) initSellScreen() tea.Cmd {
-	sellScreen := screen.NewSellScreen(g.player.warehouse.resources, g.market.GetPricesCurrent())
-
-	sellScreen.OnAborted = func() {
-		g.showScreen = ScreenMain
-	}
-
-	sellScreen.OnComplete = func(sellOrder map[string]int) {
-		g.showScreen = ScreenMain
-
-		for item, quantity := range sellOrder {
-			if quantity == 0 {
-				continue
-			}
-
-			cost := g.market.resources[item].priceCurrent * quantity
-			g.player.money += cost
-			g.player.warehouse.resources[item] -= quantity
-		}
-	}
-
-	g.screenSell = sellScreen
-
-	return g.screenSell.Init()
-}
-
-func viewWarehouse(player *Player) string {
-	view := "Your Warehouse:\n"
-	hasItems := false
-	items := slices.Sorted(maps.Keys(player.warehouse.resources))
-	for _, item := range items {
-		count := player.warehouse.resources[item]
-		if count > 0 {
-			hasItems = true
-			view += fmt.Sprintf(" - %v: %v\n", item, count)
-		}
-	}
-
-	if !hasItems {
-		view += " (Empty)\n"
-	}
-
-	return view
-}
-
-func viewMarket(m *Market) string {
-	view := "Market:\n"
-
-	itemNames := slices.Sorted(maps.Keys(m.resources))
-
-	for _, name := range itemNames {
-		item := m.resources[name]
-
-		priceChange := item.priceCurrent - m.GetPricePrevious(name)
-
-		var changeStyle lipgloss.Style
-		var changeDisplay string
-		if priceChange > 0 {
-			changeDisplay = "↑ " + strconv.Itoa(priceChange)
-			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#8FBC8B"))
-		} else if priceChange < 0 {
-			changeDisplay = "↓ " + strconv.Itoa(priceChange)
-			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#CD5C5C"))
-		} else {
-			changeDisplay = "± 0"
-			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#D3D3D3"))
-		}
-
-		view += fmt.Sprintf(
-			" %v: %v (%v)\n",
-			name,
-			util.FormatMoney(item.priceCurrent),
-			changeStyle.Render(changeDisplay),
-		)
-	}
-	return view
-}
-
-func unlockItem(gd *GameData) {
-	player := gd.player
-	if len(gd.market.lockedResources) == 0 {
-		gd.toast.SetMessage("You have already unlocked all resources.")
-		return
-	}
-
-	if player.money < gd.market.unlockCost {
-		gd.toast.SetMessage("You don't have enough to unlock a new item. Stop being poor!")
-		return
-	}
-
-	player.money -= gd.market.unlockCost
-	unlockedItem := gd.market.UnlockResource()
-	if unlockedItem != nil {
-		player.warehouse.resources[unlockedItem.name] = 0
-		gd.toast.SetMessage("New resource permit secured: %v", unlockedItem.name)
-	}
 }
 
 func getActionsBar() string {
@@ -283,8 +159,8 @@ func getActionsBar() string {
 	for index, action := range actions {
 		styledAction := lipgloss.StyleRanges(
 			action,
-			lipgloss.NewRange(0, 1, screen.StyleTextFirstLetter),
-			lipgloss.NewRange(1, len(action), screen.NewAppStyle()),
+			lipgloss.NewRange(0, 1, appstyle.StyleTextFirstLetter),
+			lipgloss.NewRange(1, len(action), appstyle.NewAppStyle()),
 		)
 
 		sbContent.WriteString(styledAction)
@@ -294,5 +170,5 @@ func getActionsBar() string {
 		}
 	}
 
-	return screen.StyleActionsBar.Render(sbContent.String())
+	return appstyle.StyleActionsBar.Render(sbContent.String())
 }

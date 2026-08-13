@@ -5,7 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/screen"
+	"github.com/randomvlad/trader-vlads/internal/appstyle"
 )
 
 type TabsModel struct {
@@ -15,16 +15,16 @@ type TabsModel struct {
 	styles    *tabStyles
 }
 
-func NewTabsModel(width int) *TabsModel {
+func NewTabsModel(tabNames []string, width int) *TabsModel {
 	return &TabsModel{
-		Tabs:      []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"},
+		Tabs:      tabNames,
 		ActiveTab: 0,
 		width:     width,
 		styles:    newStyles(),
 	}
 }
 
-// TODO: TabModel struct with fields: id, display, shortcut key
+// TODO: TabModel struct with fields: id, display, shortcut key?
 
 type tabStyles struct {
 	tabsContainer lipgloss.Style
@@ -39,17 +39,17 @@ func newStyles() *tabStyles {
 	inactiveColor := lipgloss.Color("#696969")
 
 	s := new(tabStyles)
-	s.tabsContainer = screen.NewAppStyle()
+	s.tabsContainer = appstyle.NewAppStyle()
 	s.inactiveTab = lipgloss.NewStyle().
 		Border(inactiveTabBorder, true).
 		Foreground(inactiveColor).
-		BorderForeground(screen.AppBorderColor).
+		BorderForeground(appstyle.AppBorderColor).
 		Padding(0, 1)
 	s.activeTab = lipgloss.NewStyle().
 		Border(activeTabBorder, true).
 		Padding(0, 1).
-		Foreground(screen.AppTextColor).
-		BorderForeground(screen.AppBorderColor).
+		Foreground(appstyle.AppTextColor).
+		BorderForeground(appstyle.AppBorderColor).
 		Bold(true)
 
 	return s
@@ -148,5 +148,5 @@ func getSpacerStyle() lipgloss.Style {
 
 	return lipgloss.NewStyle().
 		Border(borderSpacer, false, true, true, false).
-		BorderForeground(screen.AppBorderColor)
+		BorderForeground(appstyle.AppBorderColor)
 }

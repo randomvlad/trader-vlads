@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/randomvlad/trader-vlads/internal/appmod/market"
 )
 
 type Player struct {
@@ -13,7 +15,7 @@ type Player struct {
 	inventory []*EqObject
 }
 
-func NewPlayer(m *Market) *Player {
+func NewPlayer(m *market.Market) *Player {
 
 	warehouse := &Warehouse{
 		capacity:  100,
@@ -27,8 +29,8 @@ func NewPlayer(m *Market) *Player {
 		inventory: []*EqObject{},
 	}
 
-	for _, item := range m.resources {
-		player.warehouse.resources[item.name] = 0
+	for _, item := range m.Resources {
+		player.warehouse.resources[item.Name] = 0
 	}
 
 	for _, eqObject := range getEqStarterSet() {
@@ -63,7 +65,19 @@ type Warehouse struct {
 	resources map[string]int // Resource name → quantity
 }
 
-func (p *Player) isWarehouseEmpty() bool {
+func (p *Player) GetMoney() int {
+	return p.money
+}
+
+func (p *Player) AddMoney(amount int) {
+	p.money += amount
+}
+
+func (p *Player) AddResourceQuantity(name string, quantity int) {
+	p.warehouse.resources[name] += quantity
+}
+
+func (p *Player) IsWarehouseEmpty() bool {
 	for _, count := range p.warehouse.resources {
 		if count > 0 {
 			return false

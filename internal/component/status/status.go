@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/screen"
+	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
@@ -37,5 +37,5 @@ func (m *Model) Render(week, money int) string {
 }
 
 func (b *badge) render(value string) string {
-	return screen.StyleBadge.Render(b.name + ": " + value)
+	return appstyle.StyleBadge.Render(b.name + ": " + value)
 }
