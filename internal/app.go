@@ -119,21 +119,23 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				gd.toast.Message(event.name + "\n\n" + event.description)
 				gd.player.money += event.money
 			}
+			globalKeyPress = true
 		case "left", "right":
 			_, cmd := gd.tabs.Update(msg)
 			cmds = append(cmds, cmd)
+			globalKeyPress = true
 		case "enter", "esc":
 			gd.toast.Clear()
+			// TODO: Key Press & App State → delegate to corresponding Model Update()
+			// need exact app state to give key presses the right context. For example: if user is on market AND buy/sell popup, then enter has different behavior
 		case "q", "ctrl+c":
 			gd.toast.Message("Farewell and safe travels!")
 			return gd, tea.Quit
-		default:
-			globalKeyPress = false
 		}
 	}
 
-	if !globalKeyPress { // handle module bound key pressed
-		if gd.tabs.ActiveTab == 1 {
+	if !globalKeyPress {
+		if TabId(gd.tabs.ActiveTab) == TabMarket {
 			_, cmd := gd.marketModel.Update(msg)
 			cmds = append(cmds, cmd)
 		}
