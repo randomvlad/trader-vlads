@@ -14,12 +14,12 @@ import (
 )
 
 type GameData struct {
-	player       *Player
-	marketModule *appmarket.MarketModule
-	eventTrack   *EventTracker
-	tabs         *tabs.TabsModel
-	toast        *toastcmp.Toast
-	status       status.Model
+	player      *Player
+	marketModel *appmarket.Model
+	eventTrack  *EventTracker
+	tabs        *tabs.TabsModel
+	toast       *toastcmp.Toast
+	status      status.Model
 }
 
 type TabId int
@@ -41,23 +41,19 @@ func NewGame() *GameData {
 	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
 
 	return &GameData{
-		player: player,
-		marketModule: &appmarket.MarketModule{
-			Market:         market,
-			PlayerService:  player,
-			ToastMessenger: toast,
-		},
-		eventTrack: NewEventTracker(random),
-		tabs:       tabs.NewTabsModel(tabNames, appstyle.AppWidth),
-		toast:      toast,
-		status:     status.New(),
+		player:      player,
+		marketModel: appmarket.NewTuiModel(market, player, toast),
+		eventTrack:  NewEventTracker(random),
+		tabs:        tabs.NewTabsModel(tabNames, appstyle.AppWidth),
+		toast:       toast,
+		status:      status.New(),
 	}
 }
 
 func (gd *GameData) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmdMarket := gd.marketModule.Init()
+	cmdMarket := gd.marketModel.Init()
 	cmds = append(cmds, cmdMarket)
 
 	cmdTabs := gd.tabs.Init()
@@ -69,7 +65,7 @@ func (gd *GameData) Init() tea.Cmd {
 func (gd *GameData) View() tea.View {
 	var sbContent strings.Builder
 
-	sbContent.WriteString(gd.status.Render(gd.marketModule.Market.Week, gd.player.money))
+	sbContent.WriteString(gd.status.Render(gd.marketModel.Market.Week, gd.player.money))
 
 	sbContent.WriteString(gd.tabs.View().Content + "\n")
 
@@ -78,8 +74,8 @@ func (gd *GameData) View() tea.View {
 	case TabEvents:
 		activeTabContent = "Events History"
 	case TabMarket:
-		gd.marketModule.Resources = gd.player.warehouse.resources
-		activeTabContent = gd.marketModule.View().Content
+		gd.marketModel.Resources = gd.player.warehouse.resources
+		activeTabContent = gd.marketModel.View().Content
 	case TabEquipment:
 		activeTabContent = gd.player.ViewEquipment()
 	case TabStats:
@@ -112,7 +108,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "n", "N":
-			gd.marketModule.Market.NextWeek()
+			gd.marketModel.Market.NextWeek()
 			gd.toast.Clear()
 
 			event := gd.eventTrack.getRandomEvent()
@@ -135,7 +131,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if !globalKeyPress { // handle module bound key pressed
 		if gd.tabs.ActiveTab == 1 {
-			_, cmd := gd.marketModule.Update(msg)
+			_, cmd := gd.marketModel.Update(msg)
 			cmds = append(cmds, cmd)
 		}
 	}

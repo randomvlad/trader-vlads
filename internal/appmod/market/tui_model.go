@@ -1,7 +1,5 @@
 package market
 
-// TODO: rename file ... it's more than just a view
-
 import (
 	"fmt"
 	"maps"
@@ -15,15 +13,31 @@ import (
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
-type MarketModule struct {
+type Model struct {
 	Market         *Market
-	PlayerService  PlayerService
-	ToastMessenger ToastMessenger
+	playerService  PlayerService
+	toastMessenger ToastMessenger
 	Resources      map[string]int
-	Operation      int // create enum? rename to state maybe?
+	state          marketModuleState
 	screenBuy      *BuyScreen
 	screenSell     *SellScreen
 }
+
+func NewTuiModel(market *Market, playerService PlayerService, toastMessenger ToastMessenger) *Model {
+	return &Model{
+		Market:         market,
+		playerService:  playerService,
+		toastMessenger: toastMessenger,
+	}
+}
+
+type marketModuleState int
+
+const (
+	stateList marketModuleState = iota
+	stateBuy
+	stateSell
+)
 
 type PlayerService interface {
 	GetMoney() int
@@ -36,11 +50,11 @@ type ToastMessenger interface {
 	Message(text string, a ...any)
 }
 
-func (m *MarketModule) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m *MarketModule) View() tea.View {
+func (m *Model) View() tea.View {
 
 	var sbContent strings.Builder
 	sbContent.WriteString(viewMarket(m.Market))
@@ -51,11 +65,11 @@ func (m *MarketModule) View() tea.View {
 
 	compositor := lipgloss.NewCompositor(layerMain)
 
-	if m.Operation == 1 /* ScreenBuy */ {
+	if m.state == stateBuy {
 		viewBuy := m.screenBuy.View()
 		layerBuyFlow := lipgloss.NewLayer(viewBuy.Content).X(15).Y(3).Z(1)
 		compositor.AddLayers(layerBuyFlow)
-	} else if m.Operation == 2 /* ScreenSell */ {
+	} else if m.state == stateSell {
 		viewSell := m.screenSell.View()
 		layerSellFlow := lipgloss.NewLayer(viewSell.Content).X(15).Y(3).Z(1)
 		compositor.AddLayers(layerSellFlow)
@@ -64,30 +78,30 @@ func (m *MarketModule) View() tea.View {
 	return tea.NewView(appstyle.StyleAppContainer.Render(compositor.Render()))
 }
 
-func (m *MarketModule) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 
-	if m.Operation == 1 /* ScreenBuy */ {
+	switch m.state {
+	case stateBuy:
 		_, cmd := m.screenBuy.Update(msg)
 		cmds = append(cmds, cmd)
-	} else if m.Operation == 2 /* ScreenSell */ {
-
+	case stateSell:
 		_, cmd := m.screenSell.Update(msg)
 		cmds = append(cmds, cmd)
-	} else {
+	case stateList:
 		switch msg := msg.(type) {
 		case tea.KeyPressMsg:
 			switch msg.String() {
 			case "b", "B":
-				m.Operation = 1
+				m.state = stateBuy
 				cmd := m.initBuyScreen()
 				cmds = append(cmds, cmd)
 			case "s", "S":
-				if m.PlayerService.IsWarehouseEmpty() {
-					m.ToastMessenger.Message("Warehouse is empty. Nothing to sell.")
+				if m.playerService.IsWarehouseEmpty() {
+					m.toastMessenger.Message("Warehouse is empty. Nothing to sell.")
 				} else {
-					m.Operation = 2
+					m.state = stateSell
 					cmd := m.initSellScreen()
 					cmds = append(cmds, cmd)
 				}
@@ -101,7 +115,8 @@ func (m *MarketModule) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func viewMarket(m *Market) string {
-	view := "Market:\n"
+	var view strings.Builder
+	view.WriteString("Market:\n")
 
 	itemNames := slices.Sorted(maps.Keys(m.Resources))
 
@@ -123,44 +138,45 @@ func viewMarket(m *Market) string {
 			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#D3D3D3"))
 		}
 
-		view += fmt.Sprintf(
+		view.WriteString(fmt.Sprintf(
 			" %v: %v (%v)\n",
 			name,
 			util.FormatMoney(item.PriceCurrent),
 			changeStyle.Render(changeDisplay),
-		)
+		))
 	}
-	return view
+	return view.String()
 }
 
 func viewWarehouse(resources map[string]int) string {
-	view := "Your Warehouse:\n"
+	var view strings.Builder
+	view.WriteString("Your Warehouse:\n")
 	hasItems := false
 	items := slices.Sorted(maps.Keys(resources))
 	for _, item := range items {
 		count := resources[item]
 		if count > 0 {
 			hasItems = true
-			view += fmt.Sprintf(" - %v: %v\n", item, count)
+			view.WriteString(fmt.Sprintf(" - %v: %v\n", item, count))
 		}
 	}
 
 	if !hasItems {
-		view += "   Empty\n"
+		view.WriteString("   Empty\n")
 	}
 
-	return view
+	return view.String()
 }
 
-func (m *MarketModule) initBuyScreen() tea.Cmd {
-	buyScreen := NewBuyScreen(m.Market.GetPricesCurrent(), m.PlayerService.GetMoney())
+func (m *Model) initBuyScreen() tea.Cmd {
+	buyScreen := NewBuyScreen(m.Market.GetPricesCurrent(), m.playerService.GetMoney())
 
 	buyScreen.OnAborted = func() {
-		m.Operation = 0
+		m.state = stateList
 	}
 
 	buyScreen.OnComplete = func(purchaseOrder map[string]int) {
-		m.Operation = 0
+		m.state = stateList
 
 		for item, quantity := range purchaseOrder {
 			if quantity == 0 {
@@ -168,8 +184,8 @@ func (m *MarketModule) initBuyScreen() tea.Cmd {
 			}
 
 			cost := m.Market.Resources[item].PriceCurrent * quantity
-			m.PlayerService.AddMoney(-cost)
-			m.PlayerService.AddResourceQuantity(item, quantity)
+			m.playerService.AddMoney(-cost)
+			m.playerService.AddResourceQuantity(item, quantity)
 		}
 	}
 
@@ -178,15 +194,15 @@ func (m *MarketModule) initBuyScreen() tea.Cmd {
 	return m.screenBuy.Init()
 }
 
-func (m *MarketModule) initSellScreen() tea.Cmd {
+func (m *Model) initSellScreen() tea.Cmd {
 	sellScreen := NewSellScreen(m.Resources, m.Market.GetPricesCurrent())
 
 	sellScreen.OnAborted = func() {
-		m.Operation = 0
+		m.state = stateList
 	}
 
 	sellScreen.OnComplete = func(sellOrder map[string]int) {
-		m.Operation = 0
+		m.state = stateList
 
 		for item, quantity := range sellOrder {
 			if quantity == 0 {
@@ -194,8 +210,8 @@ func (m *MarketModule) initSellScreen() tea.Cmd {
 			}
 
 			cost := m.Market.Resources[item].PriceCurrent * quantity
-			m.PlayerService.AddMoney(cost)
-			m.PlayerService.AddResourceQuantity(item, -quantity)
+			m.playerService.AddMoney(cost)
+			m.playerService.AddResourceQuantity(item, -quantity)
 		}
 	}
 
@@ -204,22 +220,22 @@ func (m *MarketModule) initSellScreen() tea.Cmd {
 	return m.screenSell.Init()
 }
 
-func (m *MarketModule) unlockItem() {
+func (m *Model) unlockItem() {
 
 	if len(m.Market.LockedResources) == 0 {
-		m.ToastMessenger.Message("You have already unlocked all resources.")
+		m.toastMessenger.Message("You have already unlocked all resources.")
 		return
 	}
 
-	if m.PlayerService.GetMoney() < m.Market.UnlockCost {
-		m.ToastMessenger.Message("You don't have enough to unlock a new item. Stop being poor!")
+	if m.playerService.GetMoney() < m.Market.UnlockCost {
+		m.toastMessenger.Message("You don't have enough to unlock a new item. Stop being poor!")
 		return
 	}
 
-	m.PlayerService.AddMoney(-m.Market.UnlockCost)
+	m.playerService.AddMoney(-m.Market.UnlockCost)
 	unlockedItem := m.Market.UnlockResource()
 	if unlockedItem != nil {
-		m.PlayerService.AddResourceQuantity(unlockedItem.Name, 0)
-		m.ToastMessenger.Message("New resource permit secured: %v", unlockedItem.Name)
+		m.playerService.AddResourceQuantity(unlockedItem.Name, 0)
+		m.toastMessenger.Message("New resource permit secured: %v", unlockedItem.Name)
 	}
 }
