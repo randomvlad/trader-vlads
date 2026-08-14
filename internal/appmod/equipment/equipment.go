@@ -1,4 +1,4 @@
-package internal
+package equipment
 
 type EqObject struct {
 	Name string
@@ -21,7 +21,23 @@ const (
 	EqSlotInventory
 )
 
-func getEqStarterSet() []*EqObject {
+type BodyPart int
+
+const ( // Homage: order reflects equipment display order in Darkmists
+	BodyPartFingerLeft BodyPart = iota
+	BodyPartFingerRight
+	BodyPartNeck
+	BodyPartTorso
+	BodyPartHead
+	BodyPartLegs
+	BodyPartFeet
+	BodyPartHands
+	BodyPartWaist
+	BodyPartHoldLeft
+	BodyPartHoldRight
+)
+
+func GetEqStarterSet() []*EqObject {
 
 	return []*EqObject{
 		{

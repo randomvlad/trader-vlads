@@ -5,6 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	appeq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/status"
@@ -16,6 +17,7 @@ import (
 type GameData struct {
 	player      *Player
 	marketModel *appmarket.Model
+	eqModel     *appeq.Model
 	eventTrack  *EventTracker
 	tabs        *tabs.TabsModel
 	toast       *toastcmp.Toast
@@ -42,6 +44,7 @@ func NewGame() *GameData {
 
 	return &GameData{
 		player:      player,
+		eqModel:     appeq.NewTuiModel(player),
 		marketModel: appmarket.NewTuiModel(market, player, toast),
 		eventTrack:  NewEventTracker(random),
 		tabs:        tabs.NewTabsModel(tabNames, appstyle.AppWidth),
@@ -77,7 +80,7 @@ func (gd *GameData) View() tea.View {
 		gd.marketModel.Resources = gd.player.warehouse.resources
 		activeTabContent = gd.marketModel.View().Content
 	case TabEquipment:
-		activeTabContent = gd.player.ViewEquipment()
+		activeTabContent = gd.eqModel.View().Content
 	case TabStats:
 		activeTabContent = "Stats"
 	}

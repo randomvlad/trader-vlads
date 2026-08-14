@@ -1,18 +1,15 @@
 package internal
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
-
+	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	"github.com/randomvlad/trader-vlads/internal/appmod/market"
 )
 
 type Player struct {
 	money     int
 	warehouse *Warehouse
-	equipment map[BodyPart]*EqObject
-	inventory []*EqObject
+	equipment map[eq.BodyPart]*eq.EqObject
+	inventory []*eq.EqObject
 }
 
 func NewPlayer(m *market.Market) *Player {
@@ -25,15 +22,15 @@ func NewPlayer(m *market.Market) *Player {
 	player := Player{
 		money:     1000,
 		warehouse: warehouse,
-		equipment: make(map[BodyPart]*EqObject),
-		inventory: []*EqObject{},
+		equipment: make(map[eq.BodyPart]*eq.EqObject),
+		inventory: []*eq.EqObject{},
 	}
 
 	for _, item := range m.Resources {
 		player.warehouse.resources[item.Name] = 0
 	}
 
-	for _, eqObject := range getEqStarterSet() {
+	for _, eqObject := range eq.GetEqStarterSet() {
 		if eqObject.IsWearable() {
 			player.Wear(eqObject)
 		} else {
@@ -43,22 +40,6 @@ func NewPlayer(m *market.Market) *Player {
 
 	return &player
 }
-
-type BodyPart int
-
-const ( // Homage: order reflects equipment display order in Darkmists
-	BodyPartFingerLeft BodyPart = iota
-	BodyPartFingerRight
-	BodyPartNeck
-	BodyPartTorso
-	BodyPartHead
-	BodyPartLegs
-	BodyPartFeet
-	BodyPartHands
-	BodyPartWaist
-	BodyPartHoldLeft
-	BodyPartHoldRight
-)
 
 type Warehouse struct {
 	capacity  int
@@ -86,115 +67,64 @@ func (p *Player) IsWarehouseEmpty() bool {
 	return true
 }
 
-func (p *Player) Wear(object *EqObject) {
+func (p *Player) GetInventory() []*eq.EqObject {
+	return p.inventory
+}
+
+func (p *Player) GetEquipment() map[eq.BodyPart]*eq.EqObject {
+	return p.equipment
+}
+
+func (p *Player) Wear(object *eq.EqObject) {
 	switch object.Slot {
-	case EqSlotHead:
-		p.wearBodyPart(BodyPartHead, object)
-	case EqSlotNeck:
-		p.wearBodyPart(BodyPartNeck, object)
-	case EqSlotTorso:
-		p.wearBodyPart(BodyPartTorso, object)
-	case EqSlotHands:
-		p.wearBodyPart(BodyPartHands, object)
-	case EqSlotFinger:
-		if p.HasEquipment(BodyPartFingerLeft) {
-			p.wearBodyPart(BodyPartFingerRight, object)
+	case eq.EqSlotHead:
+		p.wearBodyPart(eq.BodyPartHead, object)
+	case eq.EqSlotNeck:
+		p.wearBodyPart(eq.BodyPartNeck, object)
+	case eq.EqSlotTorso:
+		p.wearBodyPart(eq.BodyPartTorso, object)
+	case eq.EqSlotHands:
+		p.wearBodyPart(eq.BodyPartHands, object)
+	case eq.EqSlotFinger:
+		if p.HasEquipment(eq.BodyPartFingerLeft) {
+			p.wearBodyPart(eq.BodyPartFingerRight, object)
 		} else {
-			p.wearBodyPart(BodyPartFingerLeft, object)
+			p.wearBodyPart(eq.BodyPartFingerLeft, object)
 		}
-	case EqSlotWaist:
-		p.wearBodyPart(BodyPartWaist, object)
-	case EqSlotLegs:
-		p.wearBodyPart(BodyPartLegs, object)
-	case EqSlotFeet:
-		p.wearBodyPart(BodyPartFeet, object)
-	case EqSlotWield, EqSlotHold:
-		if p.HasEquipment(BodyPartHoldLeft) {
-			p.wearBodyPart(BodyPartHoldRight, object)
+	case eq.EqSlotWaist:
+		p.wearBodyPart(eq.BodyPartWaist, object)
+	case eq.EqSlotLegs:
+		p.wearBodyPart(eq.BodyPartLegs, object)
+	case eq.EqSlotFeet:
+		p.wearBodyPart(eq.BodyPartFeet, object)
+	case eq.EqSlotWield, eq.EqSlotHold:
+		if p.HasEquipment(eq.BodyPartHoldLeft) {
+			p.wearBodyPart(eq.BodyPartHoldRight, object)
 		} else {
-			p.wearBodyPart(BodyPartHoldLeft, object)
+			p.wearBodyPart(eq.BodyPartHoldLeft, object)
 		}
 	}
 }
 
-func (p *Player) wearBodyPart(bodyPart BodyPart, object *EqObject) {
+func (p *Player) wearBodyPart(bodyPart eq.BodyPart, object *eq.EqObject) {
 	if object != nil {
 		p.Remove(bodyPart)
 		p.equipment[bodyPart] = object
 	}
 }
 
-func (p *Player) HasEquipment(bodyPart BodyPart) bool {
-	return p.equipment[bodyPart] != nil
+func (p *Player) HasEquipment(bodyPart eq.BodyPart) bool {
+	_, has := p.equipment[bodyPart]
+	return has
 }
 
-func (p *Player) Remove(bodyPart BodyPart) {
+func (p *Player) Remove(bodyPart eq.BodyPart) {
 	if eqObject, ok := p.equipment[bodyPart]; ok {
-		p.equipment[bodyPart] = nil
+		delete(p.equipment, bodyPart)
 		p.AddInventory(eqObject)
 	}
 }
 
-func (p *Player) AddInventory(object *EqObject) {
+func (p *Player) AddInventory(object *eq.EqObject) {
 	p.inventory = append(p.inventory, object)
-}
-
-func (p *Player) ViewEquipment() string {
-
-	var view strings.Builder
-
-	view.WriteString("You are using:\n")
-
-	naked := true
-	for bodyPart := range BodyPartHoldRight {
-		if !p.HasEquipment(bodyPart) {
-			continue
-		}
-
-		naked = false
-
-		var wornOn string
-		switch bodyPart {
-		case BodyPartFingerLeft, BodyPartFingerRight:
-			wornOn = "worn on finger"
-		case BodyPartNeck:
-			wornOn = "worn around neck"
-		case BodyPartTorso:
-			wornOn = "worn on torso"
-		case BodyPartHead:
-			wornOn = "worn on head"
-		case BodyPartLegs:
-			wornOn = "worn on legs"
-		case BodyPartFeet:
-			wornOn = "worn on feet"
-		case BodyPartHands:
-			wornOn = "worn on hands"
-		case BodyPartWaist:
-			wornOn = "worn on waist"
-		case BodyPartHoldLeft, BodyPartHoldRight:
-			wornOn = "held"
-		}
-		wornOn = "<" + wornOn + ">"
-
-		view.WriteString(fmt.Sprintf("     %-22s %s\n", wornOn, p.equipment[bodyPart].Name))
-	}
-
-	if naked {
-		view.WriteString("     Nothing\n")
-	}
-
-	view.WriteString("\n")
-
-	count := len(p.inventory)
-	view.WriteString("You are carrying (" + strconv.Itoa(count) + "):\n")
-
-	if count > 0 {
-		for _, object := range p.inventory {
-			view.WriteString("     " + object.Name + "\n")
-		}
-	} else {
-		view.WriteString("     Nothing\n")
-	}
-
-	return view.String()
 }
