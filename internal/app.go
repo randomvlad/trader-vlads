@@ -140,8 +140,12 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if !globalKeyPress {
-		if TabId(gd.tabs.ActiveTab) == TabMarket {
+		switch TabId(gd.tabs.ActiveTab) {
+		case TabMarket:
 			_, cmd := gd.marketModel.Update(msg)
+			cmds = append(cmds, cmd)
+		case TabEquipment:
+			_, cmd := gd.eqModel.Update(msg)
 			cmds = append(cmds, cmd)
 		}
 	}

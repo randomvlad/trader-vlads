@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"slices"
+
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	"github.com/randomvlad/trader-vlads/internal/appmod/market"
 )
@@ -28,6 +30,11 @@ func NewPlayer(m *market.Market) *Player {
 
 	for _, item := range m.Resources {
 		player.warehouse.resources[item.Name] = 0
+	}
+
+	// initialize every eq body part
+	for bodyPart := range eq.BodyPartsMax {
+		player.equipment[eq.BodyPart(bodyPart)] = nil
 	}
 
 	for _, eqObject := range eq.GetEqStarterSet() {
@@ -106,6 +113,21 @@ func (p *Player) Wear(object *eq.EqObject) {
 	}
 }
 
+func (p *Player) WearInventory(invIndex int) bool {
+	if invIndex < 0 || invIndex >= len(p.inventory) {
+		return false
+	}
+
+	eqObject := p.inventory[invIndex]
+	if !eqObject.IsWearable() {
+		return false
+	}
+
+	p.Wear(eqObject)
+	p.inventory = slices.Delete(p.inventory, invIndex, invIndex+1)
+	return true
+}
+
 func (p *Player) wearBodyPart(bodyPart eq.BodyPart, object *eq.EqObject) {
 	if object != nil {
 		p.Remove(bodyPart)
@@ -114,17 +136,21 @@ func (p *Player) wearBodyPart(bodyPart eq.BodyPart, object *eq.EqObject) {
 }
 
 func (p *Player) HasEquipment(bodyPart eq.BodyPart) bool {
-	_, has := p.equipment[bodyPart]
-	return has
+	return p.equipment[bodyPart] != nil
 }
 
-func (p *Player) Remove(bodyPart eq.BodyPart) {
-	if eqObject, ok := p.equipment[bodyPart]; ok {
-		delete(p.equipment, bodyPart)
-		p.AddInventory(eqObject)
+func (p *Player) Remove(bodyPart eq.BodyPart) int {
+
+	if p.equipment[bodyPart] != nil {
+		indexAdded := p.AddInventory(p.equipment[bodyPart])
+		p.equipment[bodyPart] = nil
+		return indexAdded
+	} else {
+		return -1
 	}
 }
 
-func (p *Player) AddInventory(object *eq.EqObject) {
+func (p *Player) AddInventory(object *eq.EqObject) int {
 	p.inventory = append(p.inventory, object)
+	return len(p.inventory) - 1
 }

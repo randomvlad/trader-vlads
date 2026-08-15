@@ -29,19 +29,23 @@ func (m *Model) Render() string {
 	var view strings.Builder
 	view.WriteString("Actions: ")
 
-	for index, action := range m.Actions {
-		styledAction := lipgloss.StyleRanges(
-			action,
-			lipgloss.NewRange(0, 1, appstyle.StyleActionFirstLetter),
-			lipgloss.NewRange(1, len(action), appstyle.NewAppStyle()),
-		)
+	if len(m.Actions) > 0 {
+		for index, action := range m.Actions {
+			styledAction := lipgloss.StyleRanges(
+				action,
+				lipgloss.NewRange(0, 1, appstyle.StyleActionFirstLetter),
+				lipgloss.NewRange(1, len(action), appstyle.NewAppStyle()),
+			)
 
-		view.WriteString(styledAction)
+			view.WriteString(styledAction)
 
-		isLast := index == len(m.Actions)-1
-		if !isLast {
-			view.WriteString(" • ")
+			isLast := index == len(m.Actions)-1
+			if !isLast {
+				view.WriteString(" • ")
+			}
 		}
+	} else {
+		view.WriteString("None")
 	}
 
 	switch m.footerType {

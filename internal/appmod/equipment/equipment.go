@@ -1,8 +1,9 @@
 package equipment
 
 type EqObject struct {
-	Name string
-	Slot EqSlot
+	Name   string
+	Slot   EqSlot
+	Usable bool
 }
 
 type EqSlot int
@@ -37,6 +38,8 @@ const ( // Homage: order reflects equipment display order in Darkmists
 	BodyPartHoldRight
 )
 
+const BodyPartsMax = int(BodyPartHoldRight) * +1
+
 func GetEqStarterSet() []*EqObject {
 
 	return []*EqObject{
@@ -57,12 +60,26 @@ func GetEqStarterSet() []*EqObject {
 			Slot: EqSlotFeet,
 		},
 		{
-			Name: "a potion of Beginner's Luck 🍀",
-			Slot: EqSlotInventory,
+			Name:   "a potion of Beginner's Luck 🍀",
+			Slot:   EqSlotInventory,
+			Usable: true,
+		},
+		{
+			Name:   "a jar of spicy pickles",
+			Slot:   EqSlotInventory,
+			Usable: true,
+		},
+		{
+			Name: "quill made from a talon of the Blue Dragon",
+			Slot: EqSlotHold,
 		},
 	}
 }
 
 func (o *EqObject) IsWearable() bool {
 	return o.Slot != EqSlotInventory
+}
+
+func (o *EqObject) IsUsable() bool {
+	return o.Usable
 }

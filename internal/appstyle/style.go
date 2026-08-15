@@ -15,6 +15,8 @@ var (
 		Dark:  lipgloss.Color("#04B575"),
 	}
 
+	SelectionPointer = "🜋"
+
 	// TODO: research: compat.AdaptiveColor{Light: lipgloss.Color("#f1f1f1"), Dark: lipgloss.Color("#cccccc")}
 	// See: https://github.com/charmbracelet/lipgloss/releases
 	AppTextColor = compat.AdaptiveColor{
