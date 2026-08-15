@@ -36,26 +36,10 @@ var (
 			charmtone.Charple,
 			charmtone.Sriracha)
 
-	TabViewHeight = 30
-	StyleTabView  = NewAppStyle().
-			Width(AppWidth).
-			Height(TabViewHeight).
-			Padding(0, 2).
-			Border(lipgloss.RoundedBorder(), false, true, true, true).
-			BorderForeground(AppBorderColor)
-
 	StyleBadge = NewAppStyle().
 			Padding(0, 2).
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(AppBorderColor)
-
-	StyleActionsBar = NewAppStyle().
-			Width(AppWidth).
-			Padding(0, 2).
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(AppBorderColor)
-
-	StyleTextFirstLetter = NewAppStyle().Bold(true).Underline(true)
 
 	blendColors = util.ToColors("#8BF578", "#6CCB5B", "#55A147", "#407C35", "#55A147", "#6CCB5B", "#8BF578")
 	StyleToast  = NewAppStyle().
@@ -66,6 +50,47 @@ var (
 			BorderForegroundBlend(blendColors...)
 )
 
+var (
+	TabViewHeight = 30
+	StyleTabView  = NewAppStyle().
+			Width(AppWidth).
+			Height(TabViewHeight).
+			Padding(0, 2).
+			Border(lipgloss.RoundedBorder(), false, true, true, true).
+			BorderForeground(AppBorderColor)
+
+	StyleTabBodyView = NewAppStyle().
+				Width(AppWidth).
+				Height(TabViewHeight-2).
+				Padding(0, 2).
+				Border(getTabBodyBorder(), false, true, true, true).
+				BorderForeground(AppBorderColor)
+)
+
+var (
+	StyleActionFooter = NewAppStyle().
+				Width(AppWidth).
+				Padding(0, 2).
+				Border(lipgloss.RoundedBorder(), true).
+				BorderForeground(AppBorderColor)
+
+	StyleActionFooterTab = NewAppStyle().
+				Width(AppWidth).
+				Padding(0, 2).
+				Border(lipgloss.RoundedBorder(), false, true, true, true).
+				BorderForeground(AppBorderColor)
+
+	StyleActionFirstLetter = NewAppStyle().Bold(true).Underline(true)
+)
+
 func NewAppStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(AppTextColor)
+}
+
+// Compliments the border of a tab footer that follows immediately a tab body
+func getTabBodyBorder() lipgloss.Border {
+	tabBodyBorder := lipgloss.NormalBorder()
+	tabBodyBorder.BottomLeft = "├"
+	tabBodyBorder.BottomRight = "┤"
+	return tabBodyBorder
 }

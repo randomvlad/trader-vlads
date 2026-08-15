@@ -8,15 +8,15 @@ import (
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 )
 
-type TabsModel struct {
+type Model struct {
 	Tabs      []string
 	ActiveTab int
 	width     int
 	styles    *tabStyles
 }
 
-func NewTabsModel(tabNames []string, width int) *TabsModel {
-	return &TabsModel{
+func NewModel(tabNames []string, width int) *Model {
+	return &Model{
 		Tabs:      tabNames,
 		ActiveTab: 0,
 		width:     width,
@@ -55,11 +55,11 @@ func newStyles() *tabStyles {
 	return s
 }
 
-func (m *TabsModel) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m *TabsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch keypress := msg.String(); keypress {
@@ -83,7 +83,7 @@ func tabBorderWithBottom(left, middle, right string) lipgloss.Border {
 	return border
 }
 
-func (m *TabsModel) View() tea.View {
+func (m *Model) View() tea.View {
 	var renderedTabs []string
 	for tabIndex, tabName := range m.Tabs {
 		borderStyle := getTabStyle(tabIndex, m)
@@ -105,7 +105,7 @@ func (m *TabsModel) View() tea.View {
 	return tea.NewView(m.styles.tabsContainer.Render(viewContent))
 }
 
-func getTabStyle(tabIndex int, m *TabsModel) lipgloss.Style {
+func getTabStyle(tabIndex int, m *Model) lipgloss.Style {
 	isFirst := tabIndex == 0
 	isLast := tabIndex == len(m.Tabs)-1
 	isActive := tabIndex == m.ActiveTab

@@ -9,7 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appstyle"
+	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
@@ -23,11 +23,11 @@ type Model struct {
 	screenSell     *SellScreen
 }
 
-func NewTuiModel(market *Market, playerService PlayerService, toastMessenger ToastMessenger) *Model {
+func NewTuiModel(market *Market, player PlayerService, toast ToastMessenger) *Model {
 	return &Model{
 		Market:         market,
-		playerService:  playerService,
-		toastMessenger: toastMessenger,
+		playerService:  player,
+		toastMessenger: toast,
 	}
 }
 
@@ -56,26 +56,24 @@ func (m *Model) Init() tea.Cmd {
 
 func (m *Model) View() tea.View {
 
-	var sbContent strings.Builder
-	sbContent.WriteString(viewMarket(m.Market))
-	sbContent.WriteString("\n\n")
-	sbContent.WriteString(viewWarehouse(m.Resources))
+	panel := tabs.NewTabPanel("Buy", "Sell", "Unlock Resource")
 
-	layerMain := lipgloss.NewLayer(sbContent.String())
-
-	compositor := lipgloss.NewCompositor(layerMain)
+	panel.
+		WriteLn(viewMarket(m.Market)).
+		AddLn().
+		WriteLn(viewWarehouse(m.Resources))
 
 	if m.state == stateBuy {
 		viewBuy := m.screenBuy.View()
 		layerBuyFlow := lipgloss.NewLayer(viewBuy.Content).X(15).Y(3).Z(1)
-		compositor.AddLayers(layerBuyFlow)
+		panel.AddLayer(layerBuyFlow)
 	} else if m.state == stateSell {
 		viewSell := m.screenSell.View()
 		layerSellFlow := lipgloss.NewLayer(viewSell.Content).X(15).Y(3).Z(1)
-		compositor.AddLayers(layerSellFlow)
+		panel.AddLayer(layerSellFlow)
 	}
 
-	return tea.NewView(appstyle.StyleAppContainer.Render(compositor.Render()))
+	return tea.NewView(panel.Render())
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

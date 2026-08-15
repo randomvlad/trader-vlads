@@ -8,6 +8,7 @@ import (
 	appeq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
+	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
 	"github.com/randomvlad/trader-vlads/internal/component/status"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	toastcmp "github.com/randomvlad/trader-vlads/internal/component/toast"
@@ -15,13 +16,14 @@ import (
 )
 
 type GameData struct {
-	player      *Player
-	marketModel *appmarket.Model
-	eqModel     *appeq.Model
-	eventTrack  *EventTracker
-	tabs        *tabs.TabsModel
-	toast       *toastcmp.Toast
-	status      status.Model
+	player       *Player
+	marketModel  *appmarket.Model
+	eqModel      *appeq.Model
+	eventTrack   *EventTracker
+	tabs         *tabs.Model
+	actionFooter *actionfooter.Model
+	toast        *toastcmp.Toast
+	status       status.Model
 }
 
 type TabId int
@@ -43,13 +45,14 @@ func NewGame() *GameData {
 	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
 
 	return &GameData{
-		player:      player,
-		eqModel:     appeq.NewTuiModel(player),
-		marketModel: appmarket.NewTuiModel(market, player, toast),
-		eventTrack:  NewEventTracker(random),
-		tabs:        tabs.NewTabsModel(tabNames, appstyle.AppWidth),
-		toast:       toast,
-		status:      status.New(),
+		player:       player,
+		eqModel:      appeq.NewTuiModel(player),
+		marketModel:  appmarket.NewTuiModel(market, player, toast),
+		eventTrack:   NewEventTracker(random),
+		tabs:         tabs.NewModel(tabNames, appstyle.AppWidth),
+		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone, "Next Week", "Quit"),
+		toast:        toast,
+		status:       status.New(),
 	}
 }
 
@@ -66,11 +69,11 @@ func (gd *GameData) Init() tea.Cmd {
 }
 
 func (gd *GameData) View() tea.View {
-	var sbContent strings.Builder
+	var view strings.Builder
 
-	sbContent.WriteString(gd.status.Render(gd.marketModel.Market.Week, gd.player.money))
+	view.WriteString(gd.status.Render(gd.marketModel.Market.Week, gd.player.money))
 
-	sbContent.WriteString(gd.tabs.View().Content + "\n")
+	view.WriteString(gd.tabs.View().Content + "\n")
 
 	var activeTabContent string
 	switch TabId(gd.tabs.ActiveTab) {
@@ -78,18 +81,21 @@ func (gd *GameData) View() tea.View {
 		activeTabContent = "Events History"
 	case TabMarket:
 		gd.marketModel.Resources = gd.player.warehouse.resources
-		activeTabContent = gd.marketModel.View().Content
+		view.WriteString(gd.marketModel.View().Content)
+		view.WriteString("\n")
 	case TabEquipment:
 		activeTabContent = gd.eqModel.View().Content
 	case TabStats:
 		activeTabContent = "Stats"
 	}
 
-	sbContent.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
+	if TabId(gd.tabs.ActiveTab) != TabMarket {
+		view.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
+	}
 
-	sbContent.WriteString(getActionsBar() + "\n")
+	view.WriteString(gd.actionFooter.Render())
 
-	layerMain := lipgloss.NewLayer(sbContent.String())
+	layerMain := lipgloss.NewLayer(view.String())
 
 	compositor := lipgloss.NewCompositor(layerMain)
 
@@ -142,34 +148,4 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return gd, tea.Batch(cmds...)
-}
-
-func getActionsBar() string {
-
-	var sbContent strings.Builder
-	sbContent.WriteString("Actions: ")
-
-	actions := []string{
-		"Buy",
-		"Sell",
-		"Next Week",
-		"Unlock Item",
-		"Quit",
-	}
-
-	for index, action := range actions {
-		styledAction := lipgloss.StyleRanges(
-			action,
-			lipgloss.NewRange(0, 1, appstyle.StyleTextFirstLetter),
-			lipgloss.NewRange(1, len(action), appstyle.NewAppStyle()),
-		)
-
-		sbContent.WriteString(styledAction)
-
-		if index < len(actions)-1 {
-			sbContent.WriteString(" • ")
-		}
-	}
-
-	return appstyle.StyleActionsBar.Render(sbContent.String())
 }
