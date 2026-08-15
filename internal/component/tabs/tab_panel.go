@@ -3,6 +3,7 @@ package tabs
 import (
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
@@ -49,6 +50,10 @@ func (p *TabPanel) Render() string {
 	}
 
 	return compositor.Render()
+}
+
+func (p *TabPanel) RenderTeaView() tea.View {
+	return tea.NewView(p.Render())
 }
 
 func (p *TabPanel) renderBodyWithFooter() string {

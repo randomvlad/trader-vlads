@@ -73,7 +73,7 @@ func (m *Model) View() tea.View {
 		panel.AddLayer(layerSellFlow)
 	}
 
-	return tea.NewView(panel.Render())
+	return panel.RenderTeaView()
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

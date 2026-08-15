@@ -75,21 +75,20 @@ func (gd *GameData) View() tea.View {
 
 	view.WriteString(gd.tabs.View().Content + "\n")
 
-	var activeTabContent string
-	switch TabId(gd.tabs.ActiveTab) {
+	activeTab := TabId(gd.tabs.ActiveTab)
+	switch activeTab {
 	case TabEvents:
-		activeTabContent = "Events History"
+		activeTabContent := "Events History"
+		view.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
 	case TabMarket:
 		gd.marketModel.Resources = gd.player.warehouse.resources
 		view.WriteString(gd.marketModel.View().Content)
 		view.WriteString("\n")
 	case TabEquipment:
-		activeTabContent = gd.eqModel.View().Content
+		view.WriteString(gd.eqModel.View().Content)
+		view.WriteString("\n")
 	case TabStats:
-		activeTabContent = "Stats"
-	}
-
-	if TabId(gd.tabs.ActiveTab) != TabMarket {
+		activeTabContent := "Stats"
 		view.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
 	}
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 )
 
 type Model struct {
@@ -29,11 +30,14 @@ func (m *Model) Init() tea.Cmd {
 }
 
 func (m *Model) View() tea.View {
-	var content strings.Builder
 
-	content.WriteString(m.viewEqInv())
+	panel := tabs.NewTabPanel("TBD") // needs to be context aware?
 
-	return tea.NewView(content.String())
+	return panel.
+		WriteLn(m.renderEq()).
+		AddLn().
+		WriteLn(m.renderInv()).
+		RenderTeaView()
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -42,7 +46,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m *Model) viewEqInv() string {
+func (m *Model) renderEq() string {
 
 	var view strings.Builder
 
@@ -85,7 +89,11 @@ func (m *Model) viewEqInv() string {
 		view.WriteString("     Nothing\n")
 	}
 
-	view.WriteString("\n")
+	return view.String()
+}
+
+func (m *Model) renderInv() string {
+	var view strings.Builder
 
 	inventory := m.player.GetInventory()
 	count := len(inventory)
