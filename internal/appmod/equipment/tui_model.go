@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 )
@@ -37,11 +38,18 @@ func (m *Model) View() tea.View {
 
 	panel := tabs.NewTabPanel(m.getActions()...)
 
-	return panel.
+	panel.
 		WriteLn(m.renderEq()).
 		AddLn().
-		WriteLn(m.renderInv()).
-		RenderTeaView()
+		WriteLn(m.renderInv())
+
+	eqObject := m.getSelectedObject()
+	if eqObject != nil {
+		stats := eqObject.ViewStats()
+		panel.AddLayer(lipgloss.NewLayer(appstyle.StyleEqStats.Render(stats)).X(68).Y(0).Z(1))
+	}
+
+	return panel.RenderTeaView()
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -57,6 +65,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r", "R":
 			invIndex := m.player.Remove(BodyPart(m.selectionIndex))
 			if invIndex >= 0 {
+				// move selection to the removed item in inventory
 				m.selectionIndex = invIndex + BodyPartsMax
 			}
 		case "w", "W":
@@ -160,7 +169,7 @@ func (m *Model) renderInv() string {
 	if count > 0 {
 		for index, object := range inventory {
 			if (index + positionEqOffset) == m.selectionIndex {
-				view.WriteString(appstyle.SelectionPointer) // TODO: add style?
+				view.WriteString(appstyle.SelectionPointer)
 			} else {
 				view.WriteString(" ")
 			}
@@ -193,4 +202,13 @@ func (m *Model) getActions() []string {
 	}
 
 	return actions
+}
+
+func (m *Model) getSelectedObject() *EqObject {
+	if m.selectionIndex < BodyPartsMax {
+		return m.player.GetEquipment()[BodyPart(m.selectionIndex)]
+	} else {
+		invIndex := m.selectionIndex - BodyPartsMax
+		return m.player.GetInventory()[invIndex]
+	}
 }

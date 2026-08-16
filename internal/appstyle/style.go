@@ -50,6 +50,12 @@ var (
 			Align(lipgloss.Center).
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForegroundBlend(blendColors...)
+
+	StyleEqStats = NewAppStyle().
+			Width(50).
+			Padding(0, 1).
+			Border(lipgloss.NormalBorder()).
+			BorderForegroundBlend(blendColors...)
 )
 
 var (

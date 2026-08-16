@@ -1,5 +1,7 @@
 package equipment
 
+import "strings"
+
 type EqObject struct {
 	Name   string
 	Slot   EqSlot
@@ -38,7 +40,7 @@ const ( // Homage: order reflects equipment display order in Darkmists
 	BodyPartHoldRight
 )
 
-const BodyPartsMax = int(BodyPartHoldRight) * +1
+const BodyPartsMax = int(BodyPartHoldRight) + 1
 
 func GetEqStarterSet() []*EqObject {
 
@@ -82,4 +84,38 @@ func (o *EqObject) IsWearable() bool {
 
 func (o *EqObject) IsUsable() bool {
 	return o.Usable
+}
+
+func (o *EqObject) ViewStats() string {
+	var stats strings.Builder
+	stats.WriteString("Object: " + o.Name + "\n")
+	stats.WriteString("Type: " + getEqSlotName(o.Slot) + "\n")
+	return stats.String()
+}
+
+func getEqSlotName(eqSlot EqSlot) string {
+	var name string
+	switch eqSlot {
+	case EqSlotHead:
+		name = "Head"
+	case EqSlotNeck:
+		name = "Neck"
+	case EqSlotTorso:
+		name = "Torso"
+	case EqSlotHands:
+		name = "Hands"
+	case EqSlotFinger:
+		name = "Finger"
+	case EqSlotWaist:
+		name = "Waist"
+	case EqSlotLegs:
+		name = "Legs"
+	case EqSlotFeet:
+		name = "Feet"
+	case EqSlotWield, EqSlotHold:
+		name = "Hold"
+	case EqSlotInventory:
+		name = "Inventory"
+	}
+	return name
 }
