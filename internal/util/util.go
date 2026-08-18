@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"image/color"
+	"strconv"
 
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/component/gimme"
@@ -12,6 +13,17 @@ const CurrencySymbol = "💰"
 
 func FormatMoney(amount int) string {
 	return fmt.Sprintf("%s%d", CurrencySymbol, amount)
+}
+
+func FormatCountPluralized(count int, nameSingular string) string {
+	var nameFormatted string
+	if count == 1 {
+		nameFormatted = nameSingular
+	} else {
+		nameFormatted = nameSingular + "s"
+	}
+
+	return strconv.Itoa(count) + " " + nameFormatted
 }
 
 func ToColors(names ...string) []color.Color {

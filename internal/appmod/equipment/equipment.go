@@ -1,11 +1,16 @@
 package equipment
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/randomvlad/trader-vlads/internal/appmod/stats"
+)
 
 type EqObject struct {
-	Name   string
-	Slot   EqSlot
-	Usable bool
+	Name    string
+	Slot    EqSlot
+	Usable  bool
+	Effects []stats.StatusEffect
 }
 
 type EqSlot int
@@ -65,6 +70,9 @@ func GetEqStarterSet() []*EqObject {
 			Name:   "a potion of Beginner's Luck 🍀",
 			Slot:   EqSlotInventory,
 			Usable: true,
+			Effects: []stats.StatusEffect{
+				stats.NewEffectBeginnersLuck(6, 10),
+			},
 		},
 		{
 			Name:   "a jar of spicy pickles",
@@ -87,10 +95,17 @@ func (o *EqObject) IsUsable() bool {
 }
 
 func (o *EqObject) ViewStats() string {
-	var stats strings.Builder
-	stats.WriteString("Object: " + o.Name + "\n")
-	stats.WriteString("Type: " + getEqSlotName(o.Slot) + "\n")
-	return stats.String()
+	var view strings.Builder
+	view.WriteString("Object: " + o.Name + "\n")
+	view.WriteString("Type: " + getEqSlotName(o.Slot) + "\n")
+
+	if len(o.Effects) > 0 {
+		for _, effect := range o.Effects {
+			view.WriteString("Effect: " + effect.View() + "\n")
+		}
+	}
+
+	return view.String()
 }
 
 func getEqSlotName(eqSlot EqSlot) string {

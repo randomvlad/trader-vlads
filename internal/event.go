@@ -1,6 +1,9 @@
 package internal
 
-import "github.com/randomvlad/trader-vlads/internal/util"
+import (
+	"github.com/randomvlad/trader-vlads/internal/appmod/stats"
+	"github.com/randomvlad/trader-vlads/internal/util"
+)
 
 type EventTracker struct {
 	randomGenerator *util.RandomGenerator
@@ -10,6 +13,7 @@ type Event struct {
 	name        string
 	description string
 	money       int
+	affects     []*stats.StatusEffect
 }
 
 func NewEventTracker(r *util.RandomGenerator) *EventTracker {
@@ -52,7 +56,3 @@ func (t *EventTracker) getRandomEvent() *Event {
 		return nil
 	}
 }
-
-// future todo: what's the right callback/application mechanism?
-// 1) event.getEffects() -> apply Effects[]
-// 2) event.apply(player, market) or event.apply(gameData)

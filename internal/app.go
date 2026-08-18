@@ -7,6 +7,7 @@ import (
 	"charm.land/lipgloss/v2"
 	appeq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
+	appstats "github.com/randomvlad/trader-vlads/internal/appmod/stats"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
 	"github.com/randomvlad/trader-vlads/internal/component/status"
@@ -19,6 +20,7 @@ type GameData struct {
 	player       *Player
 	marketModel  *appmarket.Model
 	eqModel      *appeq.Model
+	statsModel   *appstats.Model
 	eventTrack   *EventTracker
 	tabs         *tabs.Model
 	actionFooter *actionfooter.Model
@@ -46,8 +48,9 @@ func NewGame() *GameData {
 
 	return &GameData{
 		player:       player,
-		eqModel:      appeq.NewTuiModel(player),
+		eqModel:      appeq.NewTuiModel(player, toast),
 		marketModel:  appmarket.NewTuiModel(market, player, toast),
+		statsModel:   appstats.NewTuiModel(player),
 		eventTrack:   NewEventTracker(random),
 		tabs:         tabs.NewModel(tabNames, appstyle.AppWidth),
 		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone, "Next Week", "Quit"),
@@ -88,8 +91,8 @@ func (gd *GameData) View() tea.View {
 		view.WriteString(gd.eqModel.View().Content)
 		view.WriteString("\n")
 	case TabStats:
-		activeTabContent := "Stats"
-		view.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
+		view.WriteString(gd.statsModel.View().Content)
+		view.WriteString("\n")
 	}
 
 	view.WriteString(gd.actionFooter.Render())
@@ -119,6 +122,9 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			gd.marketModel.Market.NextWeek()
 			gd.toast.Clear()
 
+			// TODO: Dedicated service: TurnKeeper?
+			gd.player.NextWeek()
+
 			event := gd.eventTrack.getRandomEvent()
 			if event != nil {
 				gd.toast.Message(event.name + "\n\n" + event.description)
@@ -146,6 +152,9 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		case TabEquipment:
 			_, cmd := gd.eqModel.Update(msg)
+			cmds = append(cmds, cmd)
+		case TabStats:
+			_, cmd := gd.statsModel.Update(msg)
 			cmds = append(cmds, cmd)
 		}
 	}

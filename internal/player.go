@@ -5,6 +5,7 @@ import (
 
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	"github.com/randomvlad/trader-vlads/internal/appmod/market"
+	"github.com/randomvlad/trader-vlads/internal/appmod/stats"
 )
 
 type Player struct {
@@ -12,6 +13,7 @@ type Player struct {
 	warehouse *Warehouse
 	equipment map[eq.BodyPart]*eq.EqObject
 	inventory []*eq.EqObject
+	effects   []stats.StatusEffect
 }
 
 func NewPlayer(m *market.Market) *Player {
@@ -78,8 +80,20 @@ func (p *Player) GetInventory() []*eq.EqObject {
 	return p.inventory
 }
 
-func (p *Player) GetEquipment() map[eq.BodyPart]*eq.EqObject {
+func (p *Player) GetInventoryObject(index int) *eq.EqObject {
+	if index >= 0 || index < len(p.inventory) {
+		return p.inventory[index]
+	} else {
+		return nil
+	}
+}
+
+func (p *Player) GetEquipped() map[eq.BodyPart]*eq.EqObject {
 	return p.equipment
+}
+
+func (p *Player) GetEquippedObject(bodyPart eq.BodyPart) *eq.EqObject {
+	return p.equipment[bodyPart]
 }
 
 func (p *Player) Wear(object *eq.EqObject) {
@@ -93,7 +107,7 @@ func (p *Player) Wear(object *eq.EqObject) {
 	case eq.EqSlotHands:
 		p.wearBodyPart(eq.BodyPartHands, object)
 	case eq.EqSlotFinger:
-		if p.HasEquipment(eq.BodyPartFingerLeft) {
+		if p.HasEquipped(eq.BodyPartFingerLeft) {
 			p.wearBodyPart(eq.BodyPartFingerRight, object)
 		} else {
 			p.wearBodyPart(eq.BodyPartFingerLeft, object)
@@ -105,7 +119,7 @@ func (p *Player) Wear(object *eq.EqObject) {
 	case eq.EqSlotFeet:
 		p.wearBodyPart(eq.BodyPartFeet, object)
 	case eq.EqSlotWield, eq.EqSlotHold:
-		if p.HasEquipment(eq.BodyPartHoldLeft) {
+		if p.HasEquipped(eq.BodyPartHoldLeft) {
 			p.wearBodyPart(eq.BodyPartHoldRight, object)
 		} else {
 			p.wearBodyPart(eq.BodyPartHoldLeft, object)
@@ -114,12 +128,8 @@ func (p *Player) Wear(object *eq.EqObject) {
 }
 
 func (p *Player) WearInventory(invIndex int) bool {
-	if invIndex < 0 || invIndex >= len(p.inventory) {
-		return false
-	}
-
-	eqObject := p.inventory[invIndex]
-	if !eqObject.IsWearable() {
+	eqObject := p.GetInventoryObject(invIndex)
+	if eqObject == nil || !eqObject.IsWearable() {
 		return false
 	}
 
@@ -135,13 +145,12 @@ func (p *Player) wearBodyPart(bodyPart eq.BodyPart, object *eq.EqObject) {
 	}
 }
 
-func (p *Player) HasEquipment(bodyPart eq.BodyPart) bool {
+func (p *Player) HasEquipped(bodyPart eq.BodyPart) bool {
 	return p.equipment[bodyPart] != nil
 }
 
 func (p *Player) Remove(bodyPart eq.BodyPart) int {
-
-	if p.equipment[bodyPart] != nil {
+	if p.HasEquipped(bodyPart) {
 		indexAdded := p.AddInventory(p.equipment[bodyPart])
 		p.equipment[bodyPart] = nil
 		return indexAdded
@@ -153,4 +162,45 @@ func (p *Player) Remove(bodyPart eq.BodyPart) int {
 func (p *Player) AddInventory(object *eq.EqObject) int {
 	p.inventory = append(p.inventory, object)
 	return len(p.inventory) - 1
+}
+
+func (p *Player) AddEffects(effects ...stats.StatusEffect) {
+	p.effects = append(p.effects, effects...)
+}
+
+func (p *Player) GetEffects() []stats.StatusEffect {
+	return p.effects
+}
+
+func (p *Player) Use(invIndex int) bool {
+	eqObject := p.GetInventoryObject(invIndex)
+	if eqObject == nil || !eqObject.IsUsable() {
+		return false
+	}
+
+	p.AddEffects(eqObject.Effects...)
+	p.destroy(invIndex)
+	return true
+}
+
+func (p *Player) NextWeek() {
+	if p.effects != nil {
+		var nextWeekEffects []stats.StatusEffect
+
+		for _, effect := range p.effects {
+			effect.Apply(p)
+			// TODO: think through turn countdown more. Does effect expire at 0 or -1?
+			// when using a potion should its benefits apply immediately? or next turn?
+
+			if !effect.HasExpired() {
+				nextWeekEffects = append(nextWeekEffects, effect)
+			}
+		}
+
+		p.effects = nextWeekEffects
+	}
+}
+
+func (p *Player) destroy(invIndex int) {
+	p.inventory = slices.Delete(p.inventory, invIndex, invIndex+1)
 }

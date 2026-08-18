@@ -12,22 +12,31 @@ import (
 )
 
 type Model struct {
-	player         PlayerService
 	selectionIndex int
+	player         PlayerService
+	toast          ToastMessenger
 }
 
-func NewTuiModel(player PlayerService) *Model {
+func NewTuiModel(player PlayerService, toast ToastMessenger) *Model {
 	return &Model{
 		player: player,
+		toast:  toast,
 	}
 }
 
 type PlayerService interface {
-	GetInventory() []*EqObject
-	HasEquipment(BodyPart) bool
-	GetEquipment() map[BodyPart]*EqObject
+	HasEquipped(BodyPart) bool
+	GetEquipped() map[BodyPart]*EqObject
+	GetEquippedObject(bodyPart BodyPart) *EqObject
 	Remove(bodyPart BodyPart) int
+	GetInventory() []*EqObject
+	GetInventoryObject(invIndex int) *EqObject
 	WearInventory(invIndex int) bool
+	Use(invIndex int) bool
+}
+
+type ToastMessenger interface {
+	Message(text string, a ...any)
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -77,7 +86,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "u", "U":
-			// TODO: implement
+			invIndex := m.selectionIndex - BodyPartsMax
+			eqObject := m.player.GetInventoryObject(invIndex)
+			if eqObject != nil && eqObject.IsUsable() {
+				used := m.player.Use(invIndex)
+				if used {
+					if m.selectionIndex >= BodyPartsMax+len(m.player.GetInventory()) {
+						m.selectionIndex -= 1 // inv has shrunk so move to previous item
+					}
+
+					m.toast.Message(eqObject.Effects[0].GetAppliedMessage())
+				}
+			}
 		}
 	}
 
@@ -107,7 +127,7 @@ func (m *Model) renderEq() string {
 
 	view.WriteString("You are using:\n")
 
-	eq := m.player.GetEquipment()
+	eq := m.player.GetEquipped()
 
 	for bodyPartIndex := range BodyPartsMax {
 		bodyPart := BodyPart(bodyPartIndex)
@@ -164,7 +184,7 @@ func (m *Model) renderInv() string {
 	count := len(inventory)
 	view.WriteString("You are carrying (" + strconv.Itoa(count) + "):\n")
 
-	positionEqOffset := len(m.player.GetEquipment())
+	positionEqOffset := len(m.player.GetEquipped())
 
 	if count > 0 {
 		for index, object := range inventory {
@@ -183,17 +203,14 @@ func (m *Model) renderInv() string {
 }
 
 func (m *Model) getActions() []string {
-	var actions []string // compare
+	var actions []string
 
-	eq := m.player.GetEquipment()
 	if m.selectionIndex < BodyPartsMax {
-		eqObject := eq[BodyPart(m.selectionIndex)]
-		if eqObject != nil {
+		if m.player.HasEquipped(BodyPart(m.selectionIndex)) {
 			actions = append(actions, "Remove")
 		}
 	} else {
-		invIndex := m.selectionIndex - BodyPartsMax
-		invObject := m.player.GetInventory()[invIndex]
+		invObject := m.getSelectedObject()
 		if invObject.IsWearable() {
 			actions = append(actions, "Wear")
 		} else if invObject.IsUsable() {
@@ -206,9 +223,9 @@ func (m *Model) getActions() []string {
 
 func (m *Model) getSelectedObject() *EqObject {
 	if m.selectionIndex < BodyPartsMax {
-		return m.player.GetEquipment()[BodyPart(m.selectionIndex)]
+		return m.player.GetEquippedObject(BodyPart(m.selectionIndex))
 	} else {
 		invIndex := m.selectionIndex - BodyPartsMax
-		return m.player.GetInventory()[invIndex]
+		return m.player.GetInventoryObject(invIndex)
 	}
 }
