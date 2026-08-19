@@ -72,7 +72,7 @@ func (m *Market) NextWeek() {
 	m.Week = m.Week + 1
 
 	for _, r := range m.Resources {
-		newPrice := m.random.RandomGain(r.PriceCurrent, r.GainNegativeCap, r.GainPositiveCap, r.PriceRangeMin, r.PriceRangeMax)
+		newPrice := m.random.GainPercent(r.PriceCurrent, r.GainNegativeCap, r.GainPositiveCap, r.PriceRangeMin, r.PriceRangeMax)
 		r.PriceCurrent = newPrice
 		r.PriceHistory = append(r.PriceHistory, newPrice)
 	}

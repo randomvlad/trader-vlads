@@ -20,13 +20,15 @@ type BeginnersLuckEffect struct {
 	grantMoney    int
 }
 
-func NewEffectBeginnersLuck(turns int, money int) StatusEffect {
-	// TODO: random grants/effects: +[5-10] gold for [3-6] turns
+func NewEffectBeginnersLuck(random *util.RandomGenerator, turns int, money int) StatusEffect {
+	turnsRand := random.RollInt(turns, turns+2)
+	moneyRand := random.RollInt(money, money+5)
+
 	return &BeginnersLuckEffect{
 		name:          "Beginner's Luck 🍀",
-		durationTurns: turns,
-		turnsLeft:     turns,
-		grantMoney:    money,
+		durationTurns: turnsRand,
+		turnsLeft:     turnsRand,
+		grantMoney:    moneyRand,
 	}
 }
 

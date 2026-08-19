@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/randomvlad/trader-vlads/internal/appmod/stats"
+	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
 type EqObject struct {
@@ -47,7 +48,7 @@ const ( // Homage: order reflects equipment display order in Darkmists
 
 const BodyPartsMax = int(BodyPartHoldRight) + 1
 
-func GetEqStarterSet() []*EqObject {
+func GetEqStarterSet(random *util.RandomGenerator) []*EqObject {
 
 	return []*EqObject{
 		{
@@ -71,7 +72,7 @@ func GetEqStarterSet() []*EqObject {
 			Slot:   EqSlotInventory,
 			Usable: true,
 			Effects: []stats.StatusEffect{
-				stats.NewEffectBeginnersLuck(6, 10),
+				stats.NewEffectBeginnersLuck(random, 4, 10),
 			},
 		},
 		{

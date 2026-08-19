@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRandomGenerator_RandomGain(t *testing.T) {
+func TestRandomGenerator_GainPercent(t *testing.T) {
 	// given
 	generator := createRandomFixed()
 	valueStart := 100
 
 	// when
-	actualGain := generator.RandomGain(valueStart, 50, 50, 75, 125)
+	actualGain := generator.GainPercent(valueStart, 50, 50, 75, 125)
 
 	// then
 	assert.Equal(t, 125, actualGain) // fixed rand rolls 127 and gets clamped to 125

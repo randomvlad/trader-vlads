@@ -41,7 +41,7 @@ func NewGame() *GameData {
 	random := util.NewRandomGenerator(nil)
 
 	market := appmarket.NewMarket(random)
-	player := NewPlayer(market)
+	player := NewPlayer(market, random)
 	toast := &toastcmp.Toast{}
 
 	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
@@ -122,14 +122,22 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			gd.marketModel.Market.NextWeek()
 			gd.toast.Clear()
 
-			// TODO: Dedicated service: TurnKeeper?
-			gd.player.NextWeek()
-
+			var toastMessage string
 			event := gd.eventTrack.getRandomEvent()
 			if event != nil {
-				gd.toast.Message(event.name + "\n\n" + event.description)
+				toastMessage = event.name + "\n\n" + event.description + "\n"
 				gd.player.money += event.money
 			}
+
+			expiredEffects := gd.player.NextWeek()
+			for _, effect := range expiredEffects {
+				toastMessage += effect.GetExpiredMessage() + "\n"
+			}
+
+			if toastMessage != "" {
+				gd.toast.Message(toastMessage)
+			}
+
 			globalKeyPress = true
 		case "left", "right":
 			_, cmd := gd.tabs.Update(msg)

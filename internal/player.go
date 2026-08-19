@@ -6,6 +6,7 @@ import (
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	"github.com/randomvlad/trader-vlads/internal/appmod/market"
 	"github.com/randomvlad/trader-vlads/internal/appmod/stats"
+	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
 type Player struct {
@@ -14,9 +15,10 @@ type Player struct {
 	equipment map[eq.BodyPart]*eq.EqObject
 	inventory []*eq.EqObject
 	effects   []stats.StatusEffect
+	random    *util.RandomGenerator
 }
 
-func NewPlayer(m *market.Market) *Player {
+func NewPlayer(m *market.Market, r *util.RandomGenerator) *Player {
 
 	warehouse := &Warehouse{
 		capacity:  100,
@@ -28,6 +30,7 @@ func NewPlayer(m *market.Market) *Player {
 		warehouse: warehouse,
 		equipment: make(map[eq.BodyPart]*eq.EqObject),
 		inventory: []*eq.EqObject{},
+		random:    r,
 	}
 
 	for _, item := range m.Resources {
@@ -39,7 +42,7 @@ func NewPlayer(m *market.Market) *Player {
 		player.equipment[eq.BodyPart(bodyPart)] = nil
 	}
 
-	for _, eqObject := range eq.GetEqStarterSet() {
+	for _, eqObject := range eq.GetEqStarterSet(r) {
 		if eqObject.IsWearable() {
 			player.Wear(eqObject)
 		} else {
@@ -183,7 +186,9 @@ func (p *Player) Use(invIndex int) bool {
 	return true
 }
 
-func (p *Player) NextWeek() {
+func (p *Player) NextWeek() []stats.StatusEffect {
+	var expiredEffects []stats.StatusEffect
+
 	if p.effects != nil {
 		var nextWeekEffects []stats.StatusEffect
 
@@ -192,13 +197,17 @@ func (p *Player) NextWeek() {
 			// TODO: think through turn countdown more. Does effect expire at 0 or -1?
 			// when using a potion should its benefits apply immediately? or next turn?
 
-			if !effect.HasExpired() {
+			if effect.HasExpired() {
+				expiredEffects = append(expiredEffects, effect)
+			} else {
 				nextWeekEffects = append(nextWeekEffects, effect)
 			}
 		}
 
 		p.effects = nextWeekEffects
 	}
+
+	return expiredEffects
 }
 
 func (p *Player) destroy(invIndex int) {
