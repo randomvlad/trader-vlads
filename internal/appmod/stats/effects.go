@@ -47,12 +47,14 @@ func (e *BeginnersLuckEffect) HasExpired() bool {
 	return e.turnsLeft <= 0
 }
 
-// TODO: two separate views ... 1) definition and 2) in-progress
 func (e *BeginnersLuckEffect) View() string {
-	// TODO: if e.turnsLeft == 1 then append ⌛? Makes sense for in-progress view of stats,
-	// but less so when showing a selected item that hasn't been used yet
+	var expiresSoonIcon string
+	if e.turnsLeft == 1 {
+		expiresSoonIcon = " ⌛"
+	}
+
 	return "Grants " + util.FormatMoney(e.grantMoney) + " for " +
-		util.FormatCountPluralized(e.durationTurns, "week")
+		util.FormatCountPluralized(e.turnsLeft, "week") + expiresSoonIcon
 }
 
 func (e *BeginnersLuckEffect) Apply(player PlayerStatsService) {

@@ -95,7 +95,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.selectionIndex -= 1 // inv has shrunk so move to previous item
 					}
 
-					m.toast.Message(eqObject.Effects[0].GetAppliedMessage())
+					if len(eqObject.Effects) > 0 {
+						m.toast.Message(eqObject.Effects[0].GetAppliedMessage())
+					}
 				}
 			}
 		}
