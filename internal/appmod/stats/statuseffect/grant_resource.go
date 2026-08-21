@@ -10,22 +10,28 @@ import (
 type GrantResourceEffectDef struct {
 	Name      string
 	Resource  string
-	AmountMin int
-	AmountMax int
-	TurnsMin  int
-	TurnsMax  int
+	Permanent bool
+	Amount    *util.RangeInt
+	Turns     *util.RangeInt
 }
 
-func (d *GrantResourceEffectDef) Create(r *util.RandomGenerator, grantById ulid.ULID, grandByType string) StatusEffect {
-	return &GrantResourceEffect{
+func (def *GrantResourceEffectDef) Create(r *util.RandomGenerator, grantById ulid.ULID, grandByType string) StatusEffect {
+	effect := &GrantResourceEffect{
 		id:          ulid.Make(),
-		name:        d.Name,
+		name:        def.Name,
 		grantById:   grantById,
 		grantByType: grandByType,
-		turnsLeft:   r.RollInt(d.TurnsMin, d.TurnsMax),
-		resource:    d.Resource,
-		amount:      r.RollInt(d.AmountMin, d.AmountMax),
+		resource:    def.Resource,
+		amount:      def.Amount.Generate(r),
 	}
+
+	if def.Permanent {
+		effect.permanent = true
+	} else {
+		effect.turnsLeft = def.Turns.Generate(r)
+	}
+
+	return effect
 }
 
 type GrantResourceEffect struct {
@@ -33,68 +39,55 @@ type GrantResourceEffect struct {
 	name        string
 	grantById   ulid.ULID
 	grantByType string
+	permanent   bool
 	turnsLeft   int
 	resource    string
 	amount      int
 }
 
-func (g *GrantResourceEffect) Id() ulid.ULID {
-	return g.id
+func (e *GrantResourceEffect) Id() ulid.ULID {
+	return e.id
 }
 
-func (g *GrantResourceEffect) Name() string {
-	return g.name
+func (e *GrantResourceEffect) Name() string {
+	return e.name
 }
 
-func (g *GrantResourceEffect) GrantedById() ulid.ULID {
-	return g.grantById
+func (e *GrantResourceEffect) GrantedById() ulid.ULID {
+	return e.grantById
 }
 
-func (g *GrantResourceEffect) GrantedByType() string {
-	return g.grantByType
+func (e *GrantResourceEffect) GrantedByType() string {
+	return e.grantByType
 }
 
-func (g *GrantResourceEffect) View() string {
-	return "Grants +" + strconv.Itoa(g.amount) + " " + g.resource + " " + g.viewDurationLeft()
+func (e *GrantResourceEffect) View() string {
+	return "Grants +" + strconv.Itoa(e.amount) + " " + e.resource + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
 }
 
-func (g *GrantResourceEffect) GetAppliedMessage() string {
-	return "May the Wood be with you. Always!"
+func (e *GrantResourceEffect) GetAppliedMessage() string {
+	return "May the power of " + e.resource + " be with you. Always!"
 }
 
-func (g *GrantResourceEffect) GetExpiredMessage() string {
-	// TODO: does not apply if permanent; also messages are tied closely to item/event causing the effect
-	return "The power of Wood has left you ..."
+func (e *GrantResourceEffect) GetExpiredMessage() string {
+	if e.permanent {
+		return ""
+	} else {
+		return "The power of " + e.resource + " has left you ..."
+	}
 }
 
-func (g *GrantResourceEffect) HasExpired() bool {
-	if g.isPermanent() {
+func (e *GrantResourceEffect) HasExpired() bool {
+	if e.permanent {
 		return false
 	} else {
-		return g.turnsLeft <= 0
+		return e.turnsLeft < 1
 	}
 }
 
-func (g *GrantResourceEffect) Apply(player PlayerEffectService) {
-	player.AddResourceQuantity(g.resource, g.amount)
-	if !g.isPermanent() {
-		g.turnsLeft--
+func (e *GrantResourceEffect) Apply(player PlayerEffectService) {
+	player.AddResourceQuantity(e.resource, e.amount)
+	if !e.permanent {
+		e.turnsLeft--
 	}
-}
-
-func (g *GrantResourceEffect) viewDurationLeft() string {
-	if g.isPermanent() {
-		return "each week"
-	} else {
-		var expiresSoonIcon string
-		if g.turnsLeft == 1 {
-			expiresSoonIcon = " ⌛"
-		}
-
-		return "for " + util.FormatCountPluralized(g.turnsLeft, "week") + expiresSoonIcon
-	}
-}
-
-func (g *GrantResourceEffect) isPermanent() bool {
-	return g.turnsLeft == -1
 }

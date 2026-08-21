@@ -15,6 +15,19 @@ func FormatMoney(amount int) string {
 	return fmt.Sprintf("%s%d", CurrencySymbol, amount)
 }
 
+func ViewTurnsLeft(permanent bool, turnsLeft int) string {
+	if permanent {
+		return "each week"
+	} else {
+		var expiresSoonIcon string
+		if turnsLeft == 1 {
+			expiresSoonIcon = " ⌛"
+		}
+
+		return "for " + FormatCountPluralized(turnsLeft, "week") + expiresSoonIcon
+	}
+}
+
 func FormatCountPluralized(count int, nameSingular string) string {
 	var nameFormatted string
 	if count == 1 {

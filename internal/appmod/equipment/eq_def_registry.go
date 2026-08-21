@@ -2,6 +2,7 @@ package equipment
 
 import (
 	"github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
+	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
 type eqObjectDef struct {
@@ -71,10 +72,9 @@ func getDefinitions() []*eqObjectDef {
 			Usable: true,
 			EffectDefs: []statuseffect.StatusEffectDef{
 				&statuseffect.GrantGoldEffectDef{
-					TurnsMin: 4,
-					TurnsMax: 6,
-					MoneyMin: 10,
-					MoneyMax: 15,
+					Name:  "Beginner's Luck 🍀",
+					Turns: util.NewRangeInt(4, 6),
+					Gold:  util.NewRangeInt(10, 15),
 				},
 			},
 		},
@@ -82,11 +82,10 @@ func getDefinitions() []*eqObjectDef {
 			Name: "goose with feathers of pure gold",
 			Slot: EqSlotHold,
 			EffectDefs: []statuseffect.StatusEffectDef{
-				&statuseffect.GrantGoldEffectDef{ // TODO: support name for effect
-					TurnsMin: 100, // TODO: support permanent
-					TurnsMax: 100,
-					MoneyMin: 25,
-					MoneyMax: 25,
+				&statuseffect.GrantGoldEffectDef{
+					Name:      "Blessings of the Honk 🪿",
+					Permanent: true,
+					Gold:      util.NewRangeInt(25, 35),
 				},
 			},
 		},
@@ -102,10 +101,8 @@ func getDefinitions() []*eqObjectDef {
 				&statuseffect.GrantResourceEffectDef{
 					Name:      "Inexhaustible Cart of Lumber",
 					Resource:  "Wood",
-					AmountMin: 1,
-					AmountMax: 1,
-					TurnsMin:  100, // TODO: implement permanent
-					TurnsMax:  200,
+					Permanent: true,
+					Amount:    util.NewRangeInt(1, 1),
 				},
 			},
 		},

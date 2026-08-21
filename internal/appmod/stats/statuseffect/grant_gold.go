@@ -6,23 +6,30 @@ import (
 )
 
 type GrantGoldEffectDef struct {
-	TurnsMin int
-	TurnsMax int
-	MoneyMin int // can be combined into a Range(2, 4)
-	MoneyMax int
+	Name      string
+	Permanent bool
+	Turns     *util.RangeInt
+	Gold      *util.RangeInt
 }
 
-// TODO: can create struct CreateParam: grantById, grantByType, rand
-func (d *GrantGoldEffectDef) Create(r *util.RandomGenerator, grantById ulid.ULID, grandByType string) StatusEffect {
+// TODO: consider creating struct EffectCreateParams to centralize method arguments
+func (def *GrantGoldEffectDef) Create(r *util.RandomGenerator, grantById ulid.ULID, grandByType string) StatusEffect {
 
-	return &BeginnersLuckEffect{
+	effect := &BeginnersLuckEffect{
 		id:          ulid.Make(),
-		name:        "Beginner's Luck 🍀",
+		name:        def.Name,
 		grantById:   grantById,
 		grantByType: grandByType,
-		turnsLeft:   r.RollInt(d.TurnsMin, d.TurnsMax),
-		grantMoney:  r.RollInt(d.MoneyMin, d.MoneyMax),
+		goldGain:    def.Gold.Generate(r),
 	}
+
+	if def.Permanent {
+		effect.permanent = true
+	} else {
+		effect.turnsLeft = def.Turns.Generate(r)
+	}
+
+	return effect
 }
 
 type BeginnersLuckEffect struct {
@@ -30,8 +37,9 @@ type BeginnersLuckEffect struct {
 	name        string
 	grantById   ulid.ULID
 	grantByType string
+	permanent   bool
 	turnsLeft   int
-	grantMoney  int
+	goldGain    int
 }
 
 func (e *BeginnersLuckEffect) Id() ulid.ULID {
@@ -51,11 +59,11 @@ func (e *BeginnersLuckEffect) GrantedByType() string {
 }
 
 func (e *BeginnersLuckEffect) GetAppliedMessage() string {
-	return "You are beginning to feel naively optimistic and unconcerned."
+	return "You are beginning to feel naively optimistic and unconcerned." // TODO: make more generic or allow to override
 }
 
 func (e *BeginnersLuckEffect) GetExpiredMessage() string {
-	return "Your carefree perspective and feeling of unabashed optimism fades."
+	return "Your carefree perspective and feeling of unabashed optimism fades." // TODO: make more generic or allow to override
 }
 
 func (e *BeginnersLuckEffect) HasExpired() bool {
@@ -63,16 +71,13 @@ func (e *BeginnersLuckEffect) HasExpired() bool {
 }
 
 func (e *BeginnersLuckEffect) View() string {
-	var expiresSoonIcon string
-	if e.turnsLeft == 1 {
-		expiresSoonIcon = " ⌛"
-	}
-
-	return "Grants " + util.FormatMoney(e.grantMoney) + " for " +
-		util.FormatCountPluralized(e.turnsLeft, "week") + expiresSoonIcon
+	return "Grants +" + util.FormatMoney(e.goldGain) + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
 }
 
 func (e *BeginnersLuckEffect) Apply(player PlayerEffectService) {
-	player.AddMoney(e.grantMoney)
-	e.turnsLeft--
+	player.AddMoney(e.goldGain)
+
+	if !e.permanent {
+		e.turnsLeft--
+	}
 }
