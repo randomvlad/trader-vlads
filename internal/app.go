@@ -5,8 +5,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	appeq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
+	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
+	ev "github.com/randomvlad/trader-vlads/internal/appmod/event"
 	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
+	p "github.com/randomvlad/trader-vlads/internal/appmod/player"
 	appstats "github.com/randomvlad/trader-vlads/internal/appmod/stats"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
@@ -17,11 +19,11 @@ import (
 )
 
 type GameData struct {
-	player       *Player
+	player       *p.Player
 	marketModel  *appmarket.Model
-	eqModel      *appeq.Model
+	eqModel      *eq.Model
 	statsModel   *appstats.Model
-	eventTrack   *EventTracker
+	eventTrack   *ev.EventTracker
 	tabs         *tabs.Model
 	actionFooter *actionfooter.Model
 	toast        *toastcmp.Toast
@@ -41,17 +43,17 @@ func NewGame() *GameData {
 	random := util.NewRandomGenerator(nil)
 
 	market := appmarket.NewMarket(random)
-	player := NewPlayer(market, random)
+	player := p.NewPlayer(market, random)
 	toast := &toastcmp.Toast{}
 
 	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
 
 	return &GameData{
 		player:       player,
-		eqModel:      appeq.NewTuiModel(player, toast),
+		eqModel:      eq.NewTuiModel(player, toast),
 		marketModel:  appmarket.NewTuiModel(market, player, toast),
 		statsModel:   appstats.NewTuiModel(player),
-		eventTrack:   NewEventTracker(random),
+		eventTrack:   ev.NewEventTracker(random),
 		tabs:         tabs.NewModel(tabNames, appstyle.AppWidth),
 		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone, "Next Week", "Quit"),
 		toast:        toast,
@@ -74,7 +76,7 @@ func (gd *GameData) Init() tea.Cmd {
 func (gd *GameData) View() tea.View {
 	var view strings.Builder
 
-	view.WriteString(gd.status.Render(gd.marketModel.Market.Week, gd.player.money))
+	view.WriteString(gd.status.Render(gd.marketModel.Market.Week, gd.player.GetMoney()))
 
 	view.WriteString(gd.tabs.View().Content + "\n")
 
@@ -84,7 +86,7 @@ func (gd *GameData) View() tea.View {
 		activeTabContent := "Events History"
 		view.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
 	case TabMarket:
-		gd.marketModel.Resources = gd.player.warehouse.resources
+		gd.marketModel.Resources = gd.player.Warehouse.Resources
 		view.WriteString(gd.marketModel.View().Content)
 		view.WriteString("\n")
 	case TabEquipment:
@@ -123,10 +125,10 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			gd.toast.Clear()
 
 			var toastMessage string
-			event := gd.eventTrack.getRandomEvent()
+			event := gd.eventTrack.GetRandomEvent()
 			if event != nil {
-				toastMessage = event.name + "\n\n" + event.description + "\n"
-				gd.player.money += event.money
+				toastMessage = event.Name + "\n\n" + event.Description + "\n"
+				gd.player.AddMoney(event.Money)
 			}
 
 			expiredEffects := gd.player.NextWeek()

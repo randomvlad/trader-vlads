@@ -2,6 +2,7 @@ package stats
 
 import (
 	tea "charm.land/bubbletea/v2"
+	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 )
 
@@ -16,8 +17,7 @@ func NewTuiModel(player PlayerStatsService) *Model {
 }
 
 type PlayerStatsService interface {
-	GetEffects() []StatusEffect
-	AddMoney(amount int)
+	GetEffects() []eff.StatusEffect
 }
 
 func (m *Model) Init() tea.Cmd {

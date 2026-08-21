@@ -8,7 +8,7 @@ import (
 
 type Market struct {
 	// TODO: revisit public vs private scope
-	Week            int
+	Week            int // TODO: move out of market → TurnKeeper
 	Resources       map[string]*ResourceItem
 	UnlockCost      int
 	LockedResources []*ResourceItem
@@ -30,7 +30,7 @@ func NewMarket(r *util.RandomGenerator) *Market {
 	return &Market{
 		Week: 1,
 		Resources: map[string]*ResourceItem{
-			"Wood":    NewResourceItem("Wood", 10, 50),
+			"Wood":    NewResourceItem("Wood", 5, 30),
 			"Stone":   NewResourceItem("Stone", 10, 40),
 			"Coal":    NewResourceItem("Coal", 10, 50),
 			"Grain":   NewResourceItem("Grain", 15, 60),

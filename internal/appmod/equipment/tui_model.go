@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 )
@@ -32,6 +33,7 @@ type PlayerService interface {
 	GetInventory() []*EqObject
 	GetInventoryObject(invIndex int) *EqObject
 	WearInventory(invIndex int) bool
+	AddEffects(effects ...eff.StatusEffect)
 	Use(invIndex int) bool
 }
 
@@ -79,8 +81,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "w", "W":
 			invIndex := m.selectionIndex - BodyPartsMax
+			eqObject := m.player.GetInventoryObject(invIndex)
 			ok := m.player.WearInventory(invIndex)
 			if ok {
+				if len(eqObject.Effects) > 0 {
+					// TODO: this is a temp hack. need event pub/sub system. Player publishes event messages.
+					m.toast.Message(eqObject.Effects[0].GetAppliedMessage())
+				}
+
 				if m.selectionIndex >= BodyPartsMax+len(m.player.GetInventory()) {
 					m.selectionIndex -= 1 // inv has shrunk so move to previous item
 				}

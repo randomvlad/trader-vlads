@@ -3,36 +3,23 @@ package equipment
 import (
 	"strings"
 
-	"github.com/randomvlad/trader-vlads/internal/appmod/stats"
-	"github.com/randomvlad/trader-vlads/internal/util"
+	"github.com/oklog/ulid/v2"
+	"github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 )
 
 type EqObject struct {
+	Id      ulid.ULID
 	Name    string
 	Slot    EqSlot
 	Usable  bool
-	Effects []stats.StatusEffect
+	Effects []statuseffect.StatusEffect
 }
-
-type EqSlot int
-
-const (
-	EqSlotHead EqSlot = iota
-	EqSlotNeck
-	EqSlotTorso
-	EqSlotHands
-	EqSlotFinger
-	EqSlotWaist
-	EqSlotLegs
-	EqSlotFeet
-	EqSlotWield
-	EqSlotHold
-	EqSlotInventory
-)
 
 type BodyPart int
 
-const ( // Homage: order reflects equipment display order in Darkmists
+const BodyPartsMax = int(BodyPartHoldRight) + 1
+
+const ( // Homage: consts order reflects equipment display order in Darkmists
 	BodyPartFingerLeft BodyPart = iota
 	BodyPartFingerRight
 	BodyPartNeck
@@ -45,47 +32,6 @@ const ( // Homage: order reflects equipment display order in Darkmists
 	BodyPartHoldLeft
 	BodyPartHoldRight
 )
-
-const BodyPartsMax = int(BodyPartHoldRight) + 1
-
-func GetEqStarterSet(random *util.RandomGenerator) []*EqObject {
-
-	return []*EqObject{
-		{
-			Name: "copper ring of a novice",
-			Slot: EqSlotFinger,
-		},
-		{
-			Name: "gray cotton tunic",
-			Slot: EqSlotTorso,
-		},
-		{
-			Name: "worn trousers",
-			Slot: EqSlotLegs,
-		},
-		{
-			Name: "brown leather sandals",
-			Slot: EqSlotFeet,
-		},
-		{
-			Name:   "a potion of Beginner's Luck 🍀",
-			Slot:   EqSlotInventory,
-			Usable: true,
-			Effects: []stats.StatusEffect{
-				stats.NewEffectBeginnersLuck(random, 4, 10),
-			},
-		},
-		{
-			Name:   "a jar of spicy pickles",
-			Slot:   EqSlotInventory,
-			Usable: true,
-		},
-		{
-			Name: "quill made from a talon of the Blue Dragon",
-			Slot: EqSlotHold,
-		},
-	}
-}
 
 func (o *EqObject) IsWearable() bool {
 	return o.Slot != EqSlotInventory
