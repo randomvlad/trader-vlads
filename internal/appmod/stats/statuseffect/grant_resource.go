@@ -65,19 +65,15 @@ func (e *GrantResourceEffect) View() string {
 	return "Grants +" + strconv.Itoa(e.amount) + " " + e.resource + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
 }
 
-func (e *GrantResourceEffect) GetAppliedMessage() string {
+func (e *GrantResourceEffect) GetMessageStart() string {
 	return "May the power of " + e.resource + " be with you. Always!"
 }
 
-func (e *GrantResourceEffect) GetExpiredMessage() string {
-	if e.permanent {
-		return ""
-	} else {
-		return "The power of " + e.resource + " has left you ..."
-	}
+func (e *GrantResourceEffect) GetMessageEnd() string {
+	return "The power of " + e.resource + " has left you ..."
 }
 
-func (e *GrantResourceEffect) HasExpired() bool {
+func (e *GrantResourceEffect) HasEnded() bool {
 	if e.permanent {
 		return false
 	} else {

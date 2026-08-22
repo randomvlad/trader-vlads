@@ -133,7 +133,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			expiredEffects := gd.player.NextWeek()
 			for _, effect := range expiredEffects {
-				toastMessage += effect.GetExpiredMessage() + "\n"
+				toastMessage += effect.GetMessageEnd() + "\n"
 			}
 
 			if toastMessage != "" {

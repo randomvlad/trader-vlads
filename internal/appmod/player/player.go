@@ -234,7 +234,7 @@ func (p *Player) NextWeek() []eff.StatusEffect {
 		var nextWeekEffects []eff.StatusEffect
 
 		for _, effect := range p.effects {
-			if effect.HasExpired() {
+			if effect.HasEnded() {
 				expiredEffects = append(expiredEffects, effect)
 			} else {
 				nextWeekEffects = append(nextWeekEffects, effect)

@@ -6,10 +6,12 @@ import (
 )
 
 type GrantGoldEffectDef struct {
-	Name      string
-	Permanent bool
-	Turns     *util.RangeInt
-	Gold      *util.RangeInt
+	Name         string
+	Permanent    bool
+	Turns        *util.RangeInt
+	Gold         *util.RangeInt
+	MessageStart string
+	MessageEnd   string
 }
 
 // TODO: consider creating struct EffectCreateParams to centralize method arguments
@@ -29,17 +31,22 @@ func (def *GrantGoldEffectDef) Create(r *util.RandomGenerator, grantById ulid.UL
 		effect.turnsLeft = def.Turns.Generate(r)
 	}
 
+	effect.messageStart = util.GetOrDefault(def.MessageStart, "The tides of prosperity seem to favor you.")
+	effect.messageEnd = util.GetOrDefault(def.MessageEnd, "The tides of prosperity no longer favor you.")
+
 	return effect
 }
 
 type BeginnersLuckEffect struct {
-	id          ulid.ULID
-	name        string
-	grantById   ulid.ULID
-	grantByType string
-	permanent   bool
-	turnsLeft   int
-	goldGain    int
+	id           ulid.ULID
+	name         string
+	grantById    ulid.ULID
+	grantByType  string
+	permanent    bool
+	turnsLeft    int
+	goldGain     int
+	messageStart string
+	messageEnd   string
 }
 
 func (e *BeginnersLuckEffect) Id() ulid.ULID {
@@ -58,16 +65,20 @@ func (e *BeginnersLuckEffect) GrantedByType() string {
 	return e.grantByType
 }
 
-func (e *BeginnersLuckEffect) GetAppliedMessage() string {
-	return "You are beginning to feel naively optimistic and unconcerned." // TODO: make more generic or allow to override
+func (e *BeginnersLuckEffect) GetMessageStart() string {
+	return e.messageStart
 }
 
-func (e *BeginnersLuckEffect) GetExpiredMessage() string {
-	return "Your carefree perspective and feeling of unabashed optimism fades." // TODO: make more generic or allow to override
+func (e *BeginnersLuckEffect) GetMessageEnd() string {
+	return e.messageEnd
 }
 
-func (e *BeginnersLuckEffect) HasExpired() bool {
-	return e.turnsLeft <= 0
+func (e *BeginnersLuckEffect) HasEnded() bool {
+	if e.permanent {
+		return false
+	} else {
+		return e.turnsLeft < 1
+	}
 }
 
 func (e *BeginnersLuckEffect) View() string {

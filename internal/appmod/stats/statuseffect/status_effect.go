@@ -11,9 +11,9 @@ type StatusEffect interface {
 	GrantedById() ulid.ULID
 	GrantedByType() string
 	View() string
-	GetAppliedMessage() string
-	GetExpiredMessage() string
-	HasExpired() bool
+	GetMessageStart() string
+	GetMessageEnd() string
+	HasEnded() bool
 	Apply(player PlayerEffectService)
 }
 

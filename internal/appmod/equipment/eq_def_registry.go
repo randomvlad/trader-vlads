@@ -72,9 +72,11 @@ func getDefinitions() []*eqObjectDef {
 			Usable: true,
 			EffectDefs: []statuseffect.StatusEffectDef{
 				&statuseffect.GrantGoldEffectDef{
-					Name:  "Beginner's Luck 🍀",
-					Turns: util.NewRangeInt(4, 6),
-					Gold:  util.NewRangeInt(10, 15),
+					Name:         "Beginner's Luck 🍀",
+					Turns:        util.NewRangeInt(4, 6),
+					Gold:         util.NewRangeInt(10, 15),
+					MessageStart: "You are beginning to feel naively optimistic and unconcerned.",
+					MessageEnd:   "Your carefree perspective and feeling of unabashed optimism fades.",
 				},
 			},
 		},
@@ -83,9 +85,11 @@ func getDefinitions() []*eqObjectDef {
 			Slot: EqSlotHold,
 			EffectDefs: []statuseffect.StatusEffectDef{
 				&statuseffect.GrantGoldEffectDef{
-					Name:      "Blessings of the Honk 🪿",
-					Permanent: true,
-					Gold:      util.NewRangeInt(25, 35),
+					Name:         "Blessings of the Honk 🪿",
+					Permanent:    true,
+					Gold:         util.NewRangeInt(25, 35),
+					MessageStart: "The goose gently honks and starts following you.",
+					MessageEnd:   "The goose waddles away from you.",
 				},
 			},
 		},

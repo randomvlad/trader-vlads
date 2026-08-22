@@ -86,7 +86,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				if len(eqObject.Effects) > 0 {
 					// TODO: this is a temp hack. need event pub/sub system. Player publishes event messages.
-					m.toast.Message(eqObject.Effects[0].GetAppliedMessage())
+					m.toast.Message(eqObject.Effects[0].GetMessageStart())
 				}
 
 				if m.selectionIndex >= BodyPartsMax+len(m.player.GetInventory()) {
@@ -104,7 +104,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 					if len(eqObject.Effects) > 0 {
-						m.toast.Message(eqObject.Effects[0].GetAppliedMessage())
+						m.toast.Message(eqObject.Effects[0].GetMessageStart())
 					}
 				}
 			}
