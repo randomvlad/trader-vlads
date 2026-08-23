@@ -78,6 +78,12 @@ func getDefinitions() []*eqObjectDef {
 					MessageStart: "You are beginning to feel naively optimistic and unconcerned.",
 					MessageEnd:   "Your carefree perspective and feeling of unabashed optimism fades.",
 				},
+				&statuseffect.GrantResourceEffectDef{
+					Name:     "Beaver's Bounty",
+					Resource: "Wood",
+					Turns:    util.NewRangeInt(4, 6),
+					Amount:   util.NewRangeInt(1, 1),
+				},
 			},
 		},
 		{

@@ -46,9 +46,12 @@ func (o *EqObject) ViewStats() string {
 	view.WriteString("Object: " + o.Name + "\n")
 	view.WriteString("Type: " + getEqSlotName(o.Slot) + "\n")
 
-	if len(o.Effects) > 0 {
+	if len(o.Effects) == 1 {
+		view.WriteString("Effect: " + o.Effects[0].View() + "\n")
+	} else if len(o.Effects) > 1 {
+		view.WriteString("Effects:\n")
 		for _, effect := range o.Effects {
-			view.WriteString("Effect: " + effect.View() + "\n")
+			view.WriteString("  ‣ " + effect.View() + "\n")
 		}
 	}
 
