@@ -97,6 +97,10 @@ func (e *GrantResourceEffect) HasEnded() bool {
 	}
 }
 
+func (e *GrantResourceEffect) GetTurns() int {
+	return e.turnsLeft
+}
+
 func (e *GrantResourceEffect) Apply(player PlayerEffectService) {
 
 	var grantResource bool

@@ -14,6 +14,7 @@ type StatusEffect interface {
 	GetMessageStart() string
 	GetMessageEnd() string
 	HasEnded() bool
+	GetTurns() int
 	Apply(player PlayerEffectService)
 }
 

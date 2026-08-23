@@ -81,6 +81,10 @@ func (e *BeginnersLuckEffect) HasEnded() bool {
 	}
 }
 
+func (e *BeginnersLuckEffect) GetTurns() int {
+	return e.turnsLeft
+}
+
 func (e *BeginnersLuckEffect) View() string {
 	return "Grants +" + util.FormatMoney(e.goldGain) + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
 }

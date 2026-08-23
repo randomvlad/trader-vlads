@@ -1,6 +1,9 @@
 package stats
 
 import (
+	"slices"
+	"strings"
+
 	tea "charm.land/bubbletea/v2"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
@@ -31,6 +34,17 @@ func (m *Model) View() tea.View {
 
 	effects := m.player.GetEffects()
 	if len(effects) > 0 {
+
+		// sort by turns left, then name
+		slices.SortFunc(effects, func(first, second eff.StatusEffect) int {
+			diff := first.GetTurns() - second.GetTurns()
+			if diff == 0 {
+				return strings.Compare(first.Name(), second.Name())
+			} else {
+				return diff
+			}
+		})
+
 		for _, effect := range effects {
 			panel.WriteLn("    " + effect.Name() + " : " + effect.View())
 		}
