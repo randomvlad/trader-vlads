@@ -121,19 +121,24 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "n", "N":
-			gd.marketModel.Market.NextWeek()
 			gd.toast.Clear()
+			gd.marketModel.Market.NextWeek()
+			expiredEffects := gd.player.NextWeek()
 
 			var toastMessage string
-			event := gd.eventTrack.GetRandomEvent()
-			if event != nil {
-				toastMessage = event.Name + "\n\n" + event.Description + "\n"
-				gd.player.AddMoney(event.Money)
-			}
-
-			expiredEffects := gd.player.NextWeek()
 			for _, effect := range expiredEffects {
 				toastMessage += effect.GetMessageEnd() + "\n"
+			}
+
+			event := gd.eventTrack.GetRandomEvent()
+			if event != nil {
+				toastMessage = "\n" + event.Name + "\n\n" + event.Description + "\n"
+
+				gd.player.AddMoney(event.Money)
+
+				for _, effect := range event.Effects {
+					gd.player.AddEffects(effect)
+				}
 			}
 
 			if toastMessage != "" {

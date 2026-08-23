@@ -18,6 +18,11 @@ func NewRandomGenerator(random *rand.Rand) *RandomGenerator {
 	return &RandomGenerator{random: random}
 }
 
+func (r *RandomGenerator) Pick[T any](items []T) T {
+	index := r.IntN(len(items))
+	return items[index]
+}
+
 func (r *RandomGenerator) RollInt(valueMin, valueMax int) int {
 	randomMaxExclusive := valueMax - valueMin + 1
 	return valueMin + r.IntN(randomMaxExclusive)

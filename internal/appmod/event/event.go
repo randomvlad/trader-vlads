@@ -1,6 +1,7 @@
 package event
 
 import (
+	"github.com/oklog/ulid/v2"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
@@ -13,7 +14,8 @@ type Event struct {
 	Name        string
 	Description string
 	Money       int
-	Effects     []*eff.StatusEffect
+	EffectDefs  []eff.StatusEffectDef
+	Effects     []eff.StatusEffect
 }
 
 func NewEventTracker(r *util.RandomGenerator) *EventTracker {
@@ -44,14 +46,31 @@ func (t *EventTracker) GetEvents() []*Event {
 			Description: "Tough times dictate tough measures. You place a bounty with The House of Ancients to eliminate a hostile rival.",
 			Money:       -100,
 		},
+		{
+			Name:        "Blessings of Evergreen",
+			Description: "The forest nymphs of Evergreen have bestowed their blessings upon you.",
+			EffectDefs: []eff.StatusEffectDef{
+				&eff.GrantResourceEffectDef{
+					Name:     "Blessings of Evergreen",
+					Resource: "Wood",
+					Amount:   util.NewRangeInt(1, 1),
+					Turns:    util.NewRangeInt(2, 4),
+				},
+			},
+		},
 	}
 }
 
 func (t *EventTracker) GetRandomEvent() *Event {
 	if t.randomGenerator.RollChance(25) {
-		events := t.GetEvents()
-		index := t.randomGenerator.IntN(len(events))
-		return events[index]
+		event := t.randomGenerator.Pick(t.GetEvents())
+
+		var effects []eff.StatusEffect
+		for _, def := range event.EffectDefs {
+			effects = append(effects, def.Create(t.randomGenerator, ulid.Make(), "event"))
+		}
+		event.Effects = effects
+		return event
 	} else {
 		return nil
 	}
