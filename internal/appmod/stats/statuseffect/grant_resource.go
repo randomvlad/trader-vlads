@@ -11,6 +11,7 @@ type GrantResourceEffectDef struct {
 	Name      string
 	Resource  string
 	Permanent bool
+	Chance    *util.RangeInt
 	Amount    *util.RangeInt
 	Turns     *util.RangeInt
 }
@@ -23,6 +24,11 @@ func (def *GrantResourceEffectDef) Create(r *util.RandomGenerator, grantById uli
 		grantByType: grandByType,
 		resource:    def.Resource,
 		amount:      def.Amount.Generate(r),
+	}
+
+	if def.Chance != nil {
+		effect.chance = def.Chance.Generate(r)
+		effect.random = r
 	}
 
 	if def.Permanent {
@@ -42,7 +48,9 @@ type GrantResourceEffect struct {
 	permanent   bool
 	turnsLeft   int
 	resource    string
+	chance      int
 	amount      int
+	random      *util.RandomGenerator
 }
 
 func (e *GrantResourceEffect) Id() ulid.ULID {
@@ -62,7 +70,15 @@ func (e *GrantResourceEffect) GrantedByType() string {
 }
 
 func (e *GrantResourceEffect) View() string {
-	return "Grants +" + strconv.Itoa(e.amount) + " " + e.resource + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
+
+	var grantsDisplay string
+	if e.chance > 0 {
+		grantsDisplay = strconv.Itoa(e.chance) + "% to grant"
+	} else {
+		grantsDisplay = "Grants"
+	}
+
+	return grantsDisplay + " +" + strconv.Itoa(e.amount) + " " + e.resource + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
 }
 
 func (e *GrantResourceEffect) GetMessageStart() string {
@@ -82,7 +98,18 @@ func (e *GrantResourceEffect) HasEnded() bool {
 }
 
 func (e *GrantResourceEffect) Apply(player PlayerEffectService) {
-	player.AddResourceQuantity(e.resource, e.amount)
+
+	var grantResource bool
+	if e.random != nil && e.chance > 0 {
+		grantResource = e.random.RollChance(e.chance)
+	} else {
+		grantResource = true
+	}
+
+	if grantResource {
+		player.AddResourceQuantity(e.resource, e.amount)
+	}
+
 	if !e.permanent {
 		e.turnsLeft--
 	}

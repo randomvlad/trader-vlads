@@ -48,7 +48,7 @@ func (t *EventTracker) GetEvents() []*Event {
 }
 
 func (t *EventTracker) GetRandomEvent() *Event {
-	if t.randomGenerator.RollChance(0.25) {
+	if t.randomGenerator.RollChance(25) {
 		events := t.GetEvents()
 		index := t.randomGenerator.IntN(len(events))
 		return events[index]

@@ -19,13 +19,13 @@ func TestRandomGenerator_GainPercent(t *testing.T) {
 	assert.Equal(t, 125, actualGain) // fixed rand rolls 127 and gets clamped to 125
 }
 
-func TestRandomGenerator_RollChance(t *testing.T) {
+func TestRandomGenerator_RollChanceFloat(t *testing.T) {
 	// given
 	generator := createRandomFixed()
 	coinFlipChance := 0.5
 
 	// when
-	actualFalse := generator.RollChance(coinFlipChance)
+	actualFalse := generator.RollChanceFloat(coinFlipChance)
 
 	// then
 	assert.Equal(t, false, actualFalse)
@@ -34,13 +34,13 @@ func TestRandomGenerator_RollChance(t *testing.T) {
 func TestRandomGenerator_IntN(t *testing.T) {
 	// given
 	generator := createRandomFixed()
-	coinFlipChance := 0.5
+	maxExclusive := 50
 
 	// when
-	actualFalse := generator.RollChance(coinFlipChance)
+	actualNum := generator.IntN(maxExclusive)
 
 	// then
-	assert.Equal(t, false, actualFalse)
+	assert.Equal(t, 38, actualNum)
 }
 
 func createRandomFixed() *RandomGenerator {

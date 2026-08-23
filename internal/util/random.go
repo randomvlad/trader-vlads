@@ -23,8 +23,12 @@ func (r *RandomGenerator) RollInt(valueMin, valueMax int) int {
 	return valueMin + r.IntN(randomMaxExclusive)
 }
 
-func (r *RandomGenerator) RollChance(chanceYes float64) bool {
+func (r *RandomGenerator) RollChanceFloat(chanceYes float64) bool {
 	return r.random.Float64() < chanceYes
+}
+
+func (r *RandomGenerator) RollChance(percentYes int) bool {
+	return r.IntN(100) < percentYes
 }
 
 func (r *RandomGenerator) GainPercent(value, gainNegativePercCap, gainPositivePercCap, clampMin, clampMax int) int {
