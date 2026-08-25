@@ -189,7 +189,20 @@ func (p *Player) AddInventory(object *eq.EqObject) int {
 }
 
 func (p *Player) AddEffects(effects ...eff.StatusEffect) {
-	p.effects = append(p.effects, effects...)
+	for _, effect := range effects {
+		if p.HasEffect(effect.Name()) {
+			continue
+		}
+
+		p.effects = append(p.effects, effect)
+	}
+}
+
+func (p *Player) HasEffect(name string) bool {
+	// Note: revisit effect matching later on. Most effects have a unique name even if they provide the same type of grant
+	return slices.ContainsFunc(p.GetEffects(), func(effect eff.StatusEffect) bool {
+		return effect.Name() == name
+	})
 }
 
 func (p *Player) GetEffects() []eff.StatusEffect {
