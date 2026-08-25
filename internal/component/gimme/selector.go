@@ -1,5 +1,7 @@
 package gimme
 
+import "slices"
+
 // Selector is a helper type for selecting items.
 type Selector[T any] struct {
 	items []T
@@ -88,8 +90,8 @@ func (s *Selector[T]) Range(f func(i int, item T) bool) {
 // ReverseRange iterates over the items in reverse.
 // The callback function should return true to continue the iteration.
 func (s *Selector[T]) ReverseRange(f func(i int, item T) bool) {
-	for i := len(s.items) - 1; i >= 0; i-- {
-		if !f(i, s.items[i]) {
+	for i, v := range slices.Backward(s.items) {
+		if !f(i, v) {
 			break
 		}
 	}
