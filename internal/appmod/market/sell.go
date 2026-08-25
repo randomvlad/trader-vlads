@@ -56,7 +56,7 @@ func (s *SellScreen) Init() tea.Cmd {
 		items,
 		func(name string) string {
 			return fmt.Sprintf("Item: %v; Price: %v; # Available: %v",
-				name, util.FormatMoney(s.marketPrices[name]), s.warehouseResources[name])
+				name, util.FormatCurrency(s.marketPrices[name]), s.warehouseResources[name])
 		},
 		func(value string, input *gimme.Input) error {
 			maxRange := s.warehouseResources[input.GetKey()]

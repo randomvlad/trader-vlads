@@ -47,7 +47,7 @@ func (b *BuyScreen) Init() tea.Cmd {
 	inputFields := util.CreateFormInputFields(
 		items,
 		func(name string) string {
-			return fmt.Sprintf("Item: %v; Price: %v", name, util.FormatMoney(b.marketPrices[name]))
+			return fmt.Sprintf("Item: %v; Price: %v", name, util.FormatCurrency(b.marketPrices[name]))
 		},
 		func(value string, input *gimme.Input) error {
 			maxRange := b.money / b.marketPrices[input.GetKey()]
@@ -62,7 +62,7 @@ func (b *BuyScreen) Init() tea.Cmd {
 				totalCost += b.marketPrices[item] * quantity
 			}
 			if totalCost > b.money {
-				return errors.New(fmt.Sprintf("Requested purchase costs %v and exceeds available funds", util.FormatMoney(totalCost)))
+				return errors.New(fmt.Sprintf("Requested purchase costs %v and exceeds available funds", util.FormatCurrency(totalCost)))
 			}
 
 			return nil

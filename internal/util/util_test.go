@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFormatMoney(t *testing.T) {
+func TestFormatCurrency(t *testing.T) {
 	// given
 	amount := 100
 
 	// when
-	actualFormatted := FormatMoney(amount)
+	actualFormatted := FormatCurrency(amount)
 
 	// then
 	assert.Equal(t, "💰100", actualFormatted)

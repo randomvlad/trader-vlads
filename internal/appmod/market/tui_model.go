@@ -139,7 +139,7 @@ func viewMarket(m *Market) string {
 		view.WriteString(fmt.Sprintf(
 			" %v: %v (%v)\n",
 			name,
-			util.FormatMoney(item.PriceCurrent),
+			util.FormatCurrency(item.PriceCurrent),
 			changeStyle.Render(changeDisplay),
 		))
 	}

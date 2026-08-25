@@ -86,7 +86,7 @@ func (e *BeginnersLuckEffect) GetTurns() int {
 }
 
 func (e *BeginnersLuckEffect) View() string {
-	return "Grants +" + util.FormatMoney(e.goldGain) + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
+	return "Grants +" + util.FormatCurrency(e.goldGain) + " " + util.ViewTurnsLeft(e.permanent, e.turnsLeft)
 }
 
 func (e *BeginnersLuckEffect) Apply(player PlayerEffectService) {

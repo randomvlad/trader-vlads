@@ -3,6 +3,7 @@ package player
 import (
 	"slices"
 
+	"github.com/oklog/ulid/v2"
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	"github.com/randomvlad/trader-vlads/internal/appmod/market"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
@@ -188,6 +189,17 @@ func (p *Player) AddInventory(object *eq.EqObject) int {
 	return len(p.inventory) - 1
 }
 
+func (p *Player) Use(invIndex int) bool {
+	eqObject := p.GetInventoryObject(invIndex)
+	if eqObject == nil || !eqObject.IsUsable() {
+		return false
+	}
+
+	p.AddEffects(eqObject.Effects...)
+	p.destroy(invIndex)
+	return true
+}
+
 func (p *Player) AddEffects(effects ...eff.StatusEffect) {
 	for _, effect := range effects {
 		if p.HasEffect(effect.Name()) {
@@ -206,58 +218,23 @@ func (p *Player) HasEffect(name string) bool {
 }
 
 func (p *Player) GetEffects() []eff.StatusEffect {
-
-	var combined []eff.StatusEffect
+	var eqEffects []eff.StatusEffect
 
 	// equipment granted effects
 	for _, eqObject := range p.equipped {
 		if eqObject != nil {
-			combined = append(combined, eqObject.Effects...)
+			eqEffects = append(eqEffects, eqObject.Effects...)
 		}
 	}
 
 	// other effects (example: granted by events)
-	combined = append(combined, p.effects...)
-
-	return combined
+	return append(eqEffects, p.effects...)
 }
 
-func (p *Player) Use(invIndex int) bool {
-	eqObject := p.GetInventoryObject(invIndex)
-	if eqObject == nil || !eqObject.IsUsable() {
-		return false
-	}
-
-	p.AddEffects(eqObject.Effects...)
-	p.destroy(invIndex)
-	return true
-}
-
-func (p *Player) NextWeek() []eff.StatusEffect {
-	var expiredEffects []eff.StatusEffect
-
-	for _, effect := range p.GetEffects() {
-		// TODO: think through turn countdown more. Does effect expire at 0 or -1?
-		// when using a potion should its benefits apply immediately? or next turn?
-		effect.Apply(p)
-	}
-
-	// filter out expired events (equipment granted effects are permanent)
-	if p.effects != nil {
-		var nextWeekEffects []eff.StatusEffect
-
-		for _, effect := range p.effects {
-			if effect.HasEnded() {
-				expiredEffects = append(expiredEffects, effect)
-			} else {
-				nextWeekEffects = append(nextWeekEffects, effect)
-			}
-		}
-
-		p.effects = nextWeekEffects
-	}
-
-	return expiredEffects
+func (p *Player) RemoveEffects(ids ...ulid.ULID) {
+	p.effects = slices.DeleteFunc(p.effects, func(effect eff.StatusEffect) bool {
+		return slices.Contains(ids, effect.Id())
+	})
 }
 
 func (p *Player) destroy(invIndex int) {

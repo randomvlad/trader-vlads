@@ -19,6 +19,7 @@ import (
 )
 
 type GameData struct {
+	turnKeeper   *ev.TurnKeeper
 	player       *p.Player
 	marketModel  *appmarket.Model
 	eqModel      *eq.Model
@@ -45,15 +46,16 @@ func NewGame() *GameData {
 	market := appmarket.NewMarket(random)
 	player := p.NewPlayer(market, random)
 	toast := &toastcmp.Toast{}
+	turnKeeper := ev.NewTurnKeeper(player, market, random, toast)
 
 	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
 
 	return &GameData{
 		player:       player,
+		turnKeeper:   turnKeeper,
 		eqModel:      eq.NewTuiModel(player, toast),
 		marketModel:  appmarket.NewTuiModel(market, player, toast),
 		statsModel:   appstats.NewTuiModel(player),
-		eventTrack:   ev.NewEventTracker(random),
 		tabs:         tabs.NewModel(tabNames, appstyle.AppWidth),
 		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone, "Next Week", "Quit"),
 		toast:        toast,
@@ -76,7 +78,7 @@ func (gd *GameData) Init() tea.Cmd {
 func (gd *GameData) View() tea.View {
 	var view strings.Builder
 
-	view.WriteString(gd.status.Render(gd.marketModel.Market.Week, gd.player.GetMoney()))
+	view.WriteString(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
 
 	view.WriteString(gd.tabs.View().Content + "\n")
 
@@ -121,30 +123,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "n", "N":
-			gd.toast.Clear()
-			gd.marketModel.Market.NextWeek()
-			expiredEffects := gd.player.NextWeek()
-
-			var toastMessage string
-			for _, effect := range expiredEffects {
-				toastMessage += effect.GetMessageEnd() + "\n"
-			}
-
-			event := gd.eventTrack.GetRandomEvent()
-			if event != nil {
-				toastMessage = "\n" + event.Name + "\n\n" + event.Description + "\n"
-
-				gd.player.AddMoney(event.Money)
-
-				for _, effect := range event.Effects {
-					gd.player.AddEffects(effect)
-				}
-			}
-
-			if toastMessage != "" {
-				gd.toast.Message(toastMessage)
-			}
-
+			gd.turnKeeper.Next()
 			globalKeyPress = true
 		case "left", "right":
 			_, cmd := gd.tabs.Update(msg)

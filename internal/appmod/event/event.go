@@ -61,7 +61,9 @@ func (t *EventTracker) GetEvents() []*Event {
 	}
 }
 
-func (t *EventTracker) GetRandomEvent() *Event {
+func (t *EventTracker) GetRandomEvents() []*Event {
+	var randomEvents []*Event // for now limiting to 1 random event per method call
+
 	if t.randomGenerator.RollChance(25) {
 		event := t.randomGenerator.Pick(t.GetEvents())
 
@@ -70,8 +72,8 @@ func (t *EventTracker) GetRandomEvent() *Event {
 			effects = append(effects, def.Create(t.randomGenerator, ulid.Make(), "event"))
 		}
 		event.Effects = effects
-		return event
-	} else {
-		return nil
+		randomEvents = append(randomEvents, event)
 	}
+
+	return randomEvents
 }

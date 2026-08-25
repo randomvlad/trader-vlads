@@ -9,8 +9,8 @@ import (
 )
 
 type Model struct {
-	badgeTurn  badge
-	badgeMoney badge
+	badgeTurn badge
+	badgeGold badge
 }
 
 type badge struct {
@@ -22,18 +22,18 @@ func New() Model {
 		badgeTurn: badge{
 			name: "Week #",
 		},
-		badgeMoney: badge{
-			name: "Money",
+		badgeGold: badge{
+			name: "Gold",
 		},
 	}
 }
 
-func (m *Model) Render(week, money int) string {
+func (m *Model) Render(week, gold int) string {
 
 	badgeWeeks := m.badgeTurn.render(strconv.Itoa(week))
-	badgeMoney := m.badgeMoney.render(util.FormatMoney(money))
+	badgeGold := m.badgeGold.render(util.FormatCurrency(gold))
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, badgeWeeks, badgeMoney) + "\n"
+	return lipgloss.JoinHorizontal(lipgloss.Top, badgeWeeks, badgeGold) + "\n"
 }
 
 func (b *badge) render(value string) string {

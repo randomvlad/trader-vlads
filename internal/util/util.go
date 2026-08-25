@@ -11,8 +11,8 @@ import (
 
 const CurrencySymbol = "💰"
 
-func FormatMoney(amount int) string {
-	return fmt.Sprintf("%s%d", CurrencySymbol, amount)
+func FormatCurrency(gold int) string {
+	return fmt.Sprintf("%s%d", CurrencySymbol, gold)
 }
 
 func ViewTurnsLeft(permanent bool, turnsLeft int) string {
