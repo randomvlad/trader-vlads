@@ -1,7 +1,7 @@
 package equipment
 
 import (
-	"github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
+	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
@@ -9,7 +9,7 @@ type eqObjectDef struct {
 	Name       string
 	Slot       EqSlot
 	Usable     bool
-	EffectDefs []statuseffect.StatusEffectDef
+	EffectDefs []eff.StatusEffectDef
 }
 
 type EqSlot int
@@ -70,18 +70,22 @@ func getDefinitions() []*eqObjectDef {
 			Name:   "a potion of Beginner's Luck 🍀",
 			Slot:   EqSlotInventory,
 			Usable: true,
-			EffectDefs: []statuseffect.StatusEffectDef{
-				&statuseffect.GrantGoldEffectDef{
-					Name:         "Beginner's Luck 🍀",
-					Turns:        util.NewRangeInt(4, 6),
-					Gold:         util.NewRangeInt(10, 15),
-					MessageStart: "You are beginning to feel naively optimistic and unconcerned.",
-					MessageEnd:   "Your carefree perspective and feeling of unabashed optimism fades.",
+			EffectDefs: []eff.StatusEffectDef{
+				&eff.GrantGoldEffectDef{
+					BaseEffectDef: &eff.BaseEffectDef{
+						Name:         "Beginner's Luck 🍀",
+						Turns:        util.NewRangeInt(4, 6),
+						MessageStart: "You are beginning to feel naively optimistic and unconcerned.",
+						MessageEnd:   "Your carefree perspective and feeling of unabashed optimism fades.",
+					},
+					Gold: util.NewRangeInt(10, 15),
 				},
-				&statuseffect.GrantResourceEffectDef{
-					Name:     "Beaver's Bounty",
+				&eff.GrantResourceEffectDef{
+					BaseEffectDef: &eff.BaseEffectDef{
+						Name:  "Beaver's Bounty",
+						Turns: util.NewRangeInt(4, 6),
+					},
 					Resource: "Wood",
-					Turns:    util.NewRangeInt(4, 6),
 					Amount:   util.NewRangeInt(1, 1),
 				},
 			},
@@ -89,13 +93,15 @@ func getDefinitions() []*eqObjectDef {
 		{
 			Name: "goose with feathers of pure gold",
 			Slot: EqSlotHold,
-			EffectDefs: []statuseffect.StatusEffectDef{
-				&statuseffect.GrantGoldEffectDef{
-					Name:         "Blessings of the Honk 🪿",
-					Permanent:    true,
-					Gold:         util.NewRangeInt(25, 35),
-					MessageStart: "The goose gently honks and starts following you.",
-					MessageEnd:   "The goose waddles away from you.",
+			EffectDefs: []eff.StatusEffectDef{
+				&eff.GrantGoldEffectDef{
+					BaseEffectDef: &eff.BaseEffectDef{
+						Name:         "Blessings of the Honk 🪿",
+						Permanent:    true,
+						MessageStart: "The goose gently honks and starts following you.",
+						MessageEnd:   "The goose waddles away from you.",
+					},
+					Gold: util.NewRangeInt(25, 35),
 				},
 			},
 		},
@@ -107,13 +113,15 @@ func getDefinitions() []*eqObjectDef {
 		{
 			Name: "Inexhaustible Cart of Lumber", // HoMM3 Homage https://homm.fandom.com/wiki/Inexhaustible_Cart_of_Lumber
 			Slot: EqSlotHold,
-			EffectDefs: []statuseffect.StatusEffectDef{
-				&statuseffect.GrantResourceEffectDef{
-					Name:      "Inexhaustible Cart of Lumber",
-					Resource:  "Wood",
-					Permanent: true,
-					Chance:    util.NewRangeInt(45, 65),
-					Amount:    util.NewRangeInt(2, 3),
+			EffectDefs: []eff.StatusEffectDef{
+				&eff.GrantResourceEffectDef{
+					BaseEffectDef: &eff.BaseEffectDef{
+						Name:      "Inexhaustible Cart of Lumber",
+						Permanent: true,
+						Chance:    util.NewRangeInt(45, 65),
+					},
+					Resource: "Wood",
+					Amount:   util.NewRangeInt(2, 3),
 				},
 			},
 		},

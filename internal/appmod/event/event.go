@@ -51,10 +51,12 @@ func (t *EventTracker) GetEvents() []*Event {
 			Description: "The forest nymphs of Evergreen have bestowed their blessings upon you.",
 			EffectDefs: []eff.StatusEffectDef{
 				&eff.GrantResourceEffectDef{
-					Name:     "Blessings of Evergreen",
+					BaseEffectDef: &eff.BaseEffectDef{
+						Name:  "Blessings of Evergreen",
+						Turns: util.NewRangeInt(2, 4),
+					},
 					Resource: "Wood",
 					Amount:   util.NewRangeInt(1, 1),
-					Turns:    util.NewRangeInt(2, 4),
 				},
 			},
 		},
