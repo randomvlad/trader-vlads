@@ -5,6 +5,11 @@ import (
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
+type PlayerEffectService interface {
+	AddMoney(amount int)
+	AddResourceQuantity(name string, quantity int)
+}
+
 type StatusEffect interface {
 	Id() ulid.ULID
 	Name() string
@@ -16,25 +21,6 @@ type StatusEffect interface {
 	HasEnded() bool
 	GetTurns() int
 	Apply(player PlayerEffectService)
-}
-
-type StatusEffectDef interface {
-	Create(r *util.RandomGenerator, grantById ulid.ULID, grandByType string) StatusEffect
-}
-
-type BaseEffectDef struct {
-	StatusEffectDef
-	Name         string
-	Permanent    bool
-	Chance       *util.RangeInt
-	Turns        *util.RangeInt
-	MessageStart string
-	MessageEnd   string
-}
-
-type PlayerEffectService interface {
-	AddMoney(amount int)
-	AddResourceQuantity(name string, quantity int)
 }
 
 type BaseStatusEffect struct {
@@ -64,14 +50,14 @@ func NewBaseStatusEffect(baseDef *BaseEffectDef, r *util.RandomGenerator, grantB
 		messageEnd:    baseDef.MessageEnd,
 	}
 
-	if baseDef.Chance != nil {
-		base.chance = baseDef.Chance.Generate(r)
+	if baseDef.Duration.ChanceRange != nil {
+		base.chance = baseDef.Duration.ChanceRange.Generate(r)
 	}
 
-	if baseDef.Permanent {
+	if baseDef.Duration.PermanentDuration {
 		base.permanent = true
 	} else {
-		base.turnsLeft = baseDef.Turns.Generate(r)
+		base.turnsLeft = baseDef.Duration.TurnsRange.Generate(r)
 	}
 
 	return base

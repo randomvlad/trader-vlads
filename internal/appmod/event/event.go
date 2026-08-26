@@ -14,7 +14,7 @@ type Event struct {
 	Name        string
 	Description string
 	Money       int
-	EffectDefs  []eff.StatusEffectDef
+	EffectDefs  []eff.EffectInstanceCreator
 	Effects     []eff.StatusEffect
 }
 
@@ -49,11 +49,11 @@ func (t *EventTracker) GetEvents() []*Event {
 		{
 			Name:        "Blessings of Evergreen",
 			Description: "The forest nymphs of Evergreen have bestowed their blessings upon you.",
-			EffectDefs: []eff.StatusEffectDef{
+			EffectDefs: []eff.EffectInstanceCreator{
 				&eff.GrantResourceEffectDef{
 					BaseEffectDef: &eff.BaseEffectDef{
-						Name:  "Blessings of Evergreen",
-						Turns: util.NewRangeInt(2, 4),
+						Name:     "Blessings of Evergreen",
+						Duration: eff.NewDuration().Turns(2, 4),
 					},
 					Resource: "Wood",
 					Amount:   util.NewRangeInt(1, 1),

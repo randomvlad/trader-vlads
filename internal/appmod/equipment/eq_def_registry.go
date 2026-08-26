@@ -9,7 +9,7 @@ type eqObjectDef struct {
 	Name       string
 	Slot       EqSlot
 	Usable     bool
-	EffectDefs []eff.StatusEffectDef
+	EffectDefs []eff.EffectInstanceCreator
 }
 
 type EqSlot int
@@ -70,11 +70,11 @@ func getDefinitions() []*eqObjectDef {
 			Name:   "a potion of Beginner's Luck 🍀",
 			Slot:   EqSlotInventory,
 			Usable: true,
-			EffectDefs: []eff.StatusEffectDef{
+			EffectDefs: []eff.EffectInstanceCreator{
 				&eff.GrantGoldEffectDef{
 					BaseEffectDef: &eff.BaseEffectDef{
 						Name:         "Beginner's Luck 🍀",
-						Turns:        util.NewRangeInt(4, 6),
+						Duration:     eff.NewDuration().Turns(4, 6),
 						MessageStart: "You are beginning to feel naively optimistic and unconcerned.",
 						MessageEnd:   "Your carefree perspective and feeling of unabashed optimism fades.",
 					},
@@ -82,8 +82,8 @@ func getDefinitions() []*eqObjectDef {
 				},
 				&eff.GrantResourceEffectDef{
 					BaseEffectDef: &eff.BaseEffectDef{
-						Name:  "Beaver's Bounty",
-						Turns: util.NewRangeInt(4, 6),
+						Name:     "Beaver's Bounty",
+						Duration: eff.NewDuration().Turns(4, 6),
 					},
 					Resource: "Wood",
 					Amount:   util.NewRangeInt(1, 1),
@@ -93,11 +93,11 @@ func getDefinitions() []*eqObjectDef {
 		{
 			Name: "goose with feathers of pure gold",
 			Slot: EqSlotHold,
-			EffectDefs: []eff.StatusEffectDef{
+			EffectDefs: []eff.EffectInstanceCreator{
 				&eff.GrantGoldEffectDef{
 					BaseEffectDef: &eff.BaseEffectDef{
 						Name:         "Blessings of the Honk 🪿",
-						Permanent:    true,
+						Duration:     eff.NewDuration().Permanent(),
 						MessageStart: "The goose gently honks and starts following you.",
 						MessageEnd:   "The goose waddles away from you.",
 					},
@@ -113,12 +113,11 @@ func getDefinitions() []*eqObjectDef {
 		{
 			Name: "Inexhaustible Cart of Lumber", // HoMM3 Homage https://homm.fandom.com/wiki/Inexhaustible_Cart_of_Lumber
 			Slot: EqSlotHold,
-			EffectDefs: []eff.StatusEffectDef{
+			EffectDefs: []eff.EffectInstanceCreator{
 				&eff.GrantResourceEffectDef{
 					BaseEffectDef: &eff.BaseEffectDef{
-						Name:      "Inexhaustible Cart of Lumber",
-						Permanent: true,
-						Chance:    util.NewRangeInt(45, 65),
+						Name:     "Inexhaustible Cart of Lumber",
+						Duration: eff.NewDuration().Permanent().Chance(45, 65),
 					},
 					Resource: "Wood",
 					Amount:   util.NewRangeInt(2, 3),
