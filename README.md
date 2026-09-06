@@ -1,6 +1,6 @@
 # Trader Vlad's 
 
-A terminal based fantasy game of trade, loot and decision-making. Built in Golang with [Bubble Tea](https://github.com/charmbracelet/bubbletea) framework.  
+A turn-based fantasy game of strategy, trade and loot. Built for play in the terminal with Golang and [Bubble Tea](https://github.com/charmbracelet/bubbletea) framework.  
 
 > [!WARNING]
 > The game is under active development and in early pre-alpha stages.

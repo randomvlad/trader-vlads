@@ -4,21 +4,23 @@ import (
 	"strings"
 
 	"github.com/oklog/ulid/v2"
+	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
 type TurnKeeper struct {
 	turn         int
-	player       PlayerService
+	player       PlayerTurnService
 	market       MarketService
-	eventTracker *EventTracker
+	EventTracker *EventTracker
 	toast        ToastMessenger
 }
 
-type PlayerService interface {
+type PlayerTurnService interface {
 	AddMoney(amount int)
 	AddResourceQuantity(name string, quantity int)
+	AddInventory(object *eq.EqObject) int
 	AddEffects(effects ...eff.StatusEffect)
 	GetEffects() []eff.StatusEffect
 	RemoveEffects(ids ...ulid.ULID)
@@ -33,12 +35,13 @@ type ToastMessenger interface {
 	Clear()
 }
 
-func NewTurnKeeper(player PlayerService, market MarketService, random *util.RandomGenerator, toast ToastMessenger) *TurnKeeper {
+func NewTurnKeeper(player PlayerTurnService, market MarketService, random *util.RandomGenerator, toast ToastMessenger) *TurnKeeper {
+	eventTracker := NewEventTracker(player, random)
 	return &TurnKeeper{
 		turn:         1,
 		player:       player,
 		market:       market,
-		eventTracker: NewEventTracker(random),
+		EventTracker: eventTracker,
 		toast:        toast,
 	}
 }
@@ -56,7 +59,7 @@ func (t *TurnKeeper) Next() {
 
 	expiredEffects := t.applyEffects()
 
-	events := t.eventTracker.GetRandomEvents()
+	events := t.EventTracker.GetRandomEvents()
 
 	var toastMessage strings.Builder
 	for _, effect := range expiredEffects {
@@ -79,7 +82,7 @@ func (t *TurnKeeper) applyEffects() []eff.StatusEffect {
 	var expiredEffects []eff.StatusEffect
 
 	for _, effect := range t.player.GetEffects() {
-		effect.Apply(t.player) // TODO: move turn counting out of effect object
+		effect.Apply(t.player)
 
 		if effect.HasEnded() {
 			expiredIds = append(expiredIds, effect.Id())

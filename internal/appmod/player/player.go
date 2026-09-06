@@ -43,28 +43,22 @@ func NewPlayer(m *market.Market, r *util.RandomGenerator) *Player {
 		player.equipped[eq.BodyPart(bodyPart)] = nil
 	}
 
-	equipped := eq.Forge.Make(
-		r,
-		"copper ring of a novice",
-		"gray cotton tunic",
-		"worn trousers",
-		"brown leather sandals",
-		"quill made from a talon of the Blue Dragon",
-	)
-	for _, eqObject := range equipped {
-		player.Wear(eqObject)
-	}
-
-	inv := eq.Forge.Make(
-		r,
-		"a potion of Beginner's Luck 🍀",
-		"a jar of spicy pickles",
-		"Inexhaustible Cart of Lumber",
-		"goose with feathers of pure gold",
-	)
-	for _, eqObject := range inv {
-		player.AddInventory(eqObject)
-	}
+	//equipped := eq.Forge.Make(
+	//	r,
+	//	"quill made from a talon of the Blue Dragon",
+	//)
+	//for _, eqObject := range equipped {
+	//	player.Wear(eqObject)
+	//}
+	//
+	//inv := eq.Forge.Make(
+	//	r,
+	//	"Inexhaustible Cart of Lumber",
+	//	"goose with feathers of pure gold",
+	//)
+	//for _, eqObject := range inv {
+	//	player.AddInventory(eqObject)
+	//}
 
 	return &player
 }

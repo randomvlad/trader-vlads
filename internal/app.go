@@ -12,6 +12,7 @@ import (
 	appstats "github.com/randomvlad/trader-vlads/internal/appmod/stats"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
+	apppanel "github.com/randomvlad/trader-vlads/internal/component/panel"
 	"github.com/randomvlad/trader-vlads/internal/component/status"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	toastcmp "github.com/randomvlad/trader-vlads/internal/component/toast"
@@ -105,8 +106,19 @@ func (gd *GameData) View() tea.View {
 
 	compositor := lipgloss.NewCompositor(layerMain)
 
+	activeEvent := gd.turnKeeper.EventTracker.GetActiveEvent()
+	if activeEvent != nil {
+		panel := apppanel.NewModel().
+			WithTitle(activeEvent.Story.Name).
+			WithFooter(activeEvent.Story.GetAvailableActions()...).
+			Write(activeEvent.Story.Render())
+
+		layerPopup := lipgloss.NewLayer(panel.Render()).X(20).Y(9).Z(1)
+		compositor.AddLayers(layerPopup)
+	}
+
 	if gd.toast.Show {
-		layerToast := lipgloss.NewLayer(gd.toast.Render()).X(25).Y(8).Z(1)
+		layerToast := lipgloss.NewLayer(gd.toast.Render()).X(25).Y(8).Z(2)
 		compositor.AddLayers(layerToast)
 	}
 
@@ -140,16 +152,21 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if !globalKeyPress {
-		switch TabId(gd.tabs.ActiveTab) {
-		case TabMarket:
-			_, cmd := gd.marketModel.Update(msg)
-			cmds = append(cmds, cmd)
-		case TabEquipment:
-			_, cmd := gd.eqModel.Update(msg)
-			cmds = append(cmds, cmd)
-		case TabStats:
-			_, cmd := gd.statsModel.Update(msg)
-			cmds = append(cmds, cmd)
+		activeEvent := gd.turnKeeper.EventTracker.GetActiveEvent()
+		if activeEvent != nil {
+			activeEvent.Story.Update(msg)
+		} else {
+			switch TabId(gd.tabs.ActiveTab) {
+			case TabMarket:
+				_, cmd := gd.marketModel.Update(msg)
+				cmds = append(cmds, cmd)
+			case TabEquipment:
+				_, cmd := gd.eqModel.Update(msg)
+				cmds = append(cmds, cmd)
+			case TabStats:
+				_, cmd := gd.statsModel.Update(msg)
+				cmds = append(cmds, cmd)
+			}
 		}
 	}
 

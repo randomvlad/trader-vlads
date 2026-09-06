@@ -8,19 +8,29 @@ import (
 
 type EventTracker struct {
 	randomGenerator *util.RandomGenerator
+	activeEvent     *Event
 }
 
 type Event struct {
 	Name        string
 	Description string
 	Money       int
+	Story       *StarterSetStory
 	EffectDefs  []eff.EffectInstanceCreator
 	Effects     []eff.StatusEffect
 }
 
-func NewEventTracker(r *util.RandomGenerator) *EventTracker {
+func NewEventTracker(player PlayerTurnService, r *util.RandomGenerator) *EventTracker {
+
+	name := "To New Beginnings"
+	event := &Event{
+		Name:  name,
+		Story: NewStarterSetStory(name, player, r),
+	}
+
 	return &EventTracker{
 		randomGenerator: r,
+		activeEvent:     event,
 	}
 }
 
@@ -60,6 +70,14 @@ func (t *EventTracker) GetEvents() []*Event {
 				},
 			},
 		},
+	}
+}
+
+func (t *EventTracker) GetActiveEvent() *Event {
+	if t.activeEvent != nil && !t.activeEvent.Story.Complete {
+		return t.activeEvent
+	} else {
+		return nil
 	}
 }
 
