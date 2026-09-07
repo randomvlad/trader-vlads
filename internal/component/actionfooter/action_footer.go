@@ -8,36 +8,60 @@ import (
 
 type Model struct {
 	footerType FooterType
-	Actions    []string
+	actions    []string
+	visual     *modelVisual
+}
+
+type modelVisual struct {
+	width             int
+	styleBorder       lipgloss.Style
+	styleFirstLetter  lipgloss.Style
+	styleOtherLetters lipgloss.Style
 }
 
 type FooterType int
 
 const (
 	FooterStandalone FooterType = iota
-	FooterTab
+	FooterPanel
 	FooterNoStyle
 )
 
 func NewModel(footerType FooterType, actions ...string) *Model {
-	return &Model{footerType, actions}
+	return &Model{
+		footerType: footerType,
+		actions:    actions,
+		visual: &modelVisual{
+			width:             appstyle.AppWidth,
+			styleBorder:       getStyleBorder(footerType),
+			styleFirstLetter:  appstyle.NewAppStyle().Bold(true).Underline(true),
+			styleOtherLetters: appstyle.NewAppStyle(),
+		},
+	}
+}
+
+func (m *Model) WithWidth(value int) *Model {
+	m.visual.width = value
+	return m
+}
+
+func (m *Model) WithStyle(style lipgloss.Style) *Model {
+	m.visual.styleBorder = style
+	return m
 }
 
 func (m *Model) Render() string {
-
 	view := stringutil.NewBuilder().Write("Actions: ")
 
-	if len(m.Actions) > 0 {
-		for index, action := range m.Actions {
-			styledAction := lipgloss.StyleRanges(
+	if len(m.actions) > 0 {
+		for index, action := range m.actions {
+			view.WriteStyleRanges(
 				action,
-				lipgloss.NewRange(0, 1, appstyle.StyleActionFirstLetter),
+				lipgloss.NewRange(0, 1, m.visual.styleFirstLetter),
 				lipgloss.NewRange(1, len(action), appstyle.NewAppStyle()),
 			)
 
-			view.Write(styledAction)
-
-			isLast := index == len(m.Actions)-1
+			isLast := index == len(m.actions)-1
 			if !isLast {
 				view.Write(" • ")
 			}
@@ -46,14 +70,26 @@ func (m *Model) Render() string {
 		view.Write("None")
 	}
 
-	switch m.footerType {
+	borderStyle := m.visual.styleBorder.Width(m.visual.width)
+
+	return view.StringStyle(borderStyle)
+}
+
+func getStyleBorder(footerType FooterType) lipgloss.Style {
+	switch footerType {
 	case FooterStandalone:
-		return appstyle.StyleActionFooter.Render(view.String())
-	case FooterTab:
-		return appstyle.StyleActionFooterTab.Render(view.String())
+		return lipgloss.NewStyle().
+			Padding(0, 2).
+			Border(lipgloss.RoundedBorder(), true).
+			BorderForeground(appstyle.AppBorderColor)
+	case FooterPanel:
+		return lipgloss.NewStyle().
+			Padding(0, 2).
+			Border(lipgloss.RoundedBorder(), false, true, true, true).
+			BorderForeground(appstyle.AppBorderColor)
 	case FooterNoStyle:
 		fallthrough
 	default:
-		return view.String()
+		return lipgloss.NewStyle()
 	}
 }

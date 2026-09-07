@@ -17,21 +17,24 @@ type Model struct {
 }
 
 type modelVisual struct {
-	width      int
-	height     int
-	stylePanel lipgloss.Style
+	width     int
+	height    int
+	styleBody lipgloss.Style
 }
 
 func NewModel() *Model {
-	m := &Model{
+	styleBody := appstyle.NewAppStyle().
+		Padding(1, 2).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(appstyle.AppBorderColor)
+
+	return &Model{
 		visual: &modelVisual{
-			stylePanel: appstyle.NewAppStyle().
-				Padding(1, 2).
-				Border(lipgloss.RoundedBorder(), false, true, true, true).
-				BorderForeground(appstyle.AppBorderColor),
+			width:     80,
+			height:    20,
+			styleBody: styleBody,
 		},
 	}
-	return m.WithWidth(80).WithHeight(20)
 }
 
 func (p *Model) WithTitle(title string) *Model {
@@ -41,18 +44,21 @@ func (p *Model) WithTitle(title string) *Model {
 
 func (p *Model) WithWidth(value int) *Model {
 	p.visual.width = value
-	p.visual.stylePanel = p.visual.stylePanel.Width(value)
 	return p
 }
 
 func (p *Model) WithHeight(value int) *Model {
 	p.visual.height = value
-	p.visual.stylePanel = p.visual.stylePanel.Height(value)
+	return p
+}
+
+func (p *Model) WithStyle(styleBody lipgloss.Style) *Model {
+	p.visual.styleBody = styleBody
 	return p
 }
 
 func (p *Model) WithFooter(actions ...string) *Model {
-	p.footer = actionfooter.NewModel(actionfooter.FooterNoStyle, actions...)
+	p.footer = actionfooter.NewModel(actionfooter.FooterPanel, actions...)
 	return p
 }
 
@@ -70,8 +76,9 @@ func (p *Model) AddLn() *Model {
 	return p
 }
 
-func (p *Model) AddLayer(bodyLayer *lipgloss.Layer) {
+func (p *Model) AddLayer(bodyLayer *lipgloss.Layer) *Model {
 	p.bodyLayers = append(p.bodyLayers, bodyLayer)
+	return p
 }
 
 func (p *Model) Render() string {
@@ -94,19 +101,43 @@ func (p *Model) RenderTeaView() tea.View {
 func (p *Model) renderBodyWithFooter() string {
 	var render stringutil.Builder
 
-	panelStyle := p.visual.stylePanel
-
-	if p.title != "" {
-		render.Write(p.renderTopBorderWithTitle())
-	} else {
-		// given no title, let lipgloss draw a round border on all sides
-		panelStyle = panelStyle.Border(lipgloss.RoundedBorder())
+	includeTitle := p.title != ""
+	includeFooter := p.footer != nil
+	bodyHeight := p.visual.height
+	if includeFooter {
+		bodyHeight -= 2 // hard coding footer height for now
 	}
 
-	// append footer at the end of body
-	p.body.Ln().WriteLn(p.footer.Render())
+	if includeTitle {
+		bodyHeight -= 1 // TODO: is this correct? verify ... it appears to work but don't understand why. because of border top false?
+	}
 
-	return render.WriteStylized(p.body.String(), panelStyle).String()
+	styleBody := p.visual.styleBody.
+		Width(p.visual.width).
+		Height(bodyHeight)
+
+	if includeFooter {
+		// Compliments the border of a tab footer that follows immediately a tab body
+		b, top, right, bottom, left := styleBody.GetBorder()
+		b.BottomLeft = "├"
+		b.BottomRight = "┤"
+		styleBody = styleBody.Border(b, top, right, bottom, left)
+	}
+
+	if includeTitle {
+		// disable default lipgloss border top, title is part of top border and requires custom rendering
+		styleBody = styleBody.BorderTop(false)
+		render.Write(p.renderTopBorderWithTitle())
+	}
+
+	render.WriteStyle(p.body.String(), styleBody) // this changes depending on the footer
+
+	if p.footer != nil {
+		p.footer.WithWidth(p.visual.width)
+		render.Ln().WriteLn(p.footer.Render())
+	}
+
+	return render.String()
 }
 
 func (p *Model) renderTopBorderWithTitle() string {
@@ -127,9 +158,9 @@ func (p *Model) renderTopBorderWithTitle() string {
 		Write(borderDef.TopLeft).
 		WriteRepeat(borderDef.Top, sideLengthLeft).
 		Write("[").
-		WriteStylized(" ✧ ", stylePointedStart).
-		WriteStylized(stringutil.Truncate(p.title, 60), styleTitle).
-		WriteStylized(" ✧ ", stylePointedStart).
+		WriteStyle(" ✧ ", stylePointedStart).
+		WriteStyle(stringutil.Truncate(p.title, 60), styleTitle).
+		WriteStyle(" ✧ ", stylePointedStart).
 		Write("]").
 		WriteRepeat(borderDef.Top, sideLengthRight).
 		WriteLn(borderDef.TopRight).

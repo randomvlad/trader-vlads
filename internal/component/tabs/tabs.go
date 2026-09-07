@@ -6,54 +6,69 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
+	apppanel "github.com/randomvlad/trader-vlads/internal/component/panel"
 )
 
 type Model struct {
 	Tabs      []string
 	ActiveTab int
-	width     int
-	styles    *tabStyles
+	visual    *modelVisual
+}
+
+type modelVisual struct {
+	width       int
+	inactiveTab lipgloss.Style
+	activeTab   lipgloss.Style
 }
 
 func NewModel(tabNames []string, width int) *Model {
 	return &Model{
 		Tabs:      tabNames,
 		ActiveTab: 0,
-		width:     width,
-		styles:    newStyles(),
+		visual:    newModelVisual(width),
 	}
 }
 
-// TODO: TabModel struct with fields: id, display, shortcut key?
-
-type tabStyles struct {
-	tabsContainer lipgloss.Style
-	inactiveTab   lipgloss.Style
-	activeTab     lipgloss.Style
-}
-
-func newStyles() *tabStyles {
+func newModelVisual(width int) *modelVisual {
 
 	inactiveTabBorder := tabBorderWithBottom("┴", "─", "┴")
-	activeTabBorder := tabBorderWithBottom("┘", " ", "└")
-	inactiveColor := lipgloss.Color("#696969")
-
-	s := new(tabStyles)
-	s.tabsContainer = appstyle.NewAppStyle()
-	s.inactiveTab = lipgloss.NewStyle().
-		Border(inactiveTabBorder, true).
-		Foreground(inactiveColor).
+	styleInactiveTab := lipgloss.NewStyle().
+		Border(inactiveTabBorder).
+		Foreground(lipgloss.Color("#696969")).
 		BorderForeground(appstyle.AppBorderColor).
 		Padding(0, 1)
-	s.activeTab = lipgloss.NewStyle().
-		Border(activeTabBorder, true).
-		Padding(0, 1).
+
+	activeTabBorder := tabBorderWithBottom("┘", " ", "└")
+	styleActiveTab := lipgloss.NewStyle().
+		Border(activeTabBorder).
 		Foreground(appstyle.AppTextColor).
 		BorderForeground(appstyle.AppBorderColor).
-		Bold(true)
+		Bold(true).
+		Padding(0, 1)
 
-	return s
+	return &modelVisual{
+		width:       width,
+		inactiveTab: styleInactiveTab,
+		activeTab:   styleActiveTab,
+	}
 }
+
+func NewTabPanel(actions ...string) *apppanel.Model {
+
+	styleTabBody := appstyle.NewAppStyle().
+		Padding(0, 2).
+		Border(lipgloss.RoundedBorder()).
+		BorderTop(false). // top border is drawn by tabs view
+		BorderForeground(appstyle.AppBorderColor)
+
+	return apppanel.NewModel().
+		WithStyle(styleTabBody).
+		WithWidth(appstyle.AppWidth).
+		WithHeight(appstyle.TabHeight).
+		WithFooter(actions...)
+}
+
+// TODO: []TabModel struct with fields: id, display, shortcut key?
 
 func (m *Model) Init() tea.Cmd {
 	return nil
@@ -93,16 +108,16 @@ func (m *Model) View() tea.View {
 	viewContent := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
 
 	widthSoFar := lipgloss.Width(viewContent)
-	if widthSoFar < m.width {
+	if widthSoFar < m.visual.width {
 		borderRightWidth := 1 // account for 1-char-width right border that is added by spacer style
-		neededSpaceWidth := m.width - widthSoFar - borderRightWidth
+		neededSpaceWidth := m.visual.width - widthSoFar - borderRightWidth
 
 		// Fill remaining space with a bordered spacer so the bottom line runs all the way to max tabs width
 		spaceFiller := getSpacerStyle().Render(strings.Repeat(" ", neededSpaceWidth))
 		viewContent = lipgloss.JoinHorizontal(lipgloss.Bottom, viewContent, spaceFiller)
 	}
 
-	return tea.NewView(m.styles.tabsContainer.Render(viewContent))
+	return tea.NewView(viewContent)
 }
 
 func getTabStyle(tabIndex int, m *Model) lipgloss.Style {
@@ -112,9 +127,9 @@ func getTabStyle(tabIndex int, m *Model) lipgloss.Style {
 
 	var style lipgloss.Style
 	if isActive {
-		style = m.styles.activeTab
+		style = m.visual.activeTab
 	} else {
-		style = m.styles.inactiveTab
+		style = m.visual.inactiveTab
 	}
 	border, _, _, _, _ := style.GetBorder()
 

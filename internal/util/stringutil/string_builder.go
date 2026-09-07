@@ -45,8 +45,12 @@ func (b *Builder) Tab() *Builder {
 	return b.write("\t")
 }
 
-func (b *Builder) WriteStylized(value string, style lipgloss.Style) *Builder {
+func (b *Builder) WriteStyle(value string, style lipgloss.Style) *Builder {
 	return b.write(style.Render(value))
+}
+
+func (b *Builder) WriteStyleRanges(value string, ranges ...lipgloss.Range) *Builder {
+	return b.write(lipgloss.StyleRanges(value, ranges...))
 }
 
 func (b *Builder) WriteRepeat(value string, count int) *Builder {
@@ -63,6 +67,10 @@ func (b *Builder) Len() int {
 
 func (b *Builder) String() string {
 	return b.sb.String()
+}
+
+func (b *Builder) StringStyle(style lipgloss.Style) string {
+	return style.Render(b.sb.String())
 }
 
 func (b *Builder) write(value string) *Builder {

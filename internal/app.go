@@ -87,8 +87,8 @@ func (gd *GameData) View() tea.View {
 	activeTab := TabId(gd.tabs.ActiveTab)
 	switch activeTab {
 	case TabEvents:
-		activeTabContent := "Events History"
-		view.WriteStylized(activeTabContent, appstyle.StyleTabView).Ln()
+		panel := tabs.NewTabPanel().WriteLn("Events History")
+		view.WriteLn(panel.Render())
 	case TabMarket:
 		gd.marketModel.Resources = gd.player.Warehouse.Resources
 		view.WriteLn(gd.marketModel.View().Content)

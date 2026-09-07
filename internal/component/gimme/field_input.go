@@ -364,13 +364,13 @@ func (i *Input) View() tea.View {
 
 	var sb stringutil.Builder
 	if i.title.val != "" || i.title.fn != nil {
-		sb.WriteStylized(wrap(i.title.val, maxWidth), styles.Title)
+		sb.WriteStyle(wrap(i.title.val, maxWidth), styles.Title)
 		if !i.inline {
 			sb.Ln()
 		}
 	}
 	if i.description.val != "" || i.description.fn != nil {
-		sb.WriteStylized(wrap(i.description.val, maxWidth), styles.Description)
+		sb.WriteStyle(wrap(i.description.val, maxWidth), styles.Description)
 		if !i.inline {
 			sb.Ln()
 		}
