@@ -1,10 +1,9 @@
 package equipment
 
 import (
-	"strings"
-
 	"github.com/oklog/ulid/v2"
 	"github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type EqObject struct {
@@ -42,16 +41,16 @@ func (o *EqObject) IsUsable() bool {
 }
 
 func (o *EqObject) ViewStats() string {
-	var view strings.Builder
-	view.WriteString("Object: " + o.Name + "\n")
-	view.WriteString("Type: " + getEqSlotName(o.Slot) + "\n")
+	view := stringutil.NewBuilder().
+		WriteLn("Object: " + o.Name).
+		WriteLn("Type: " + getEqSlotName(o.Slot))
 
 	if len(o.Effects) == 1 {
-		view.WriteString("Effect: " + o.Effects[0].View() + "\n")
+		view.WriteLn("Effect: " + o.Effects[0].View())
 	} else if len(o.Effects) > 1 {
-		view.WriteString("Effects:\n")
+		view.WriteLn("Effects:")
 		for _, effect := range o.Effects {
-			view.WriteString("  ‣ " + effect.View() + "\n")
+			view.WriteLn("  ‣ " + effect.View())
 		}
 	}
 

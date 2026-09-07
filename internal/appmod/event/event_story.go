@@ -6,6 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	"github.com/randomvlad/trader-vlads/internal/util"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type StarterSetStory struct {
@@ -39,7 +40,7 @@ func NewStarterSetStory(name string, player PlayerTurnService, r *util.RandomGen
 }
 
 func (s *StarterSetStory) Render() string {
-	var render util.StringBuilder
+	var render stringutil.Builder
 	switch s.phaseIndex {
 	case 0:
 		render.WriteLn("The Guild of Merchants has sent a standard edition wooden chest to get you started.")

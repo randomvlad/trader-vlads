@@ -1,13 +1,12 @@
 package gimme
 
 import (
-	"strings"
-
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 // Input is a form input field.
@@ -363,20 +362,20 @@ func (i *Input) View() tea.View {
 		i.textinput.SetWidth(max(min(i.textinput.CharLimit, i.textinput.Width(), maxWidth), 0))
 	}
 
-	var sb strings.Builder
+	var sb stringutil.Builder
 	if i.title.val != "" || i.title.fn != nil {
-		sb.WriteString(styles.Title.Render(wrap(i.title.val, maxWidth)))
+		sb.WriteStylized(wrap(i.title.val, maxWidth), styles.Title)
 		if !i.inline {
-			sb.WriteString("\n")
+			sb.Ln()
 		}
 	}
 	if i.description.val != "" || i.description.fn != nil {
-		sb.WriteString(styles.Description.Render(wrap(i.description.val, maxWidth)))
+		sb.WriteStylized(wrap(i.description.val, maxWidth), styles.Description)
 		if !i.inline {
-			sb.WriteString("\n")
+			sb.Ln()
 		}
 	}
-	sb.WriteString(i.textinput.View())
+	sb.Write(i.textinput.View())
 
 	return tea.NewView(styles.Base.Width(i.width).Height(i.height).Render(sb.String()))
 }

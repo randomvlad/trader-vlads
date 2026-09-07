@@ -1,10 +1,9 @@
 package actionfooter
 
 import (
-	"strings"
-
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type Model struct {
@@ -26,8 +25,7 @@ func NewModel(footerType FooterType, actions ...string) *Model {
 
 func (m *Model) Render() string {
 
-	var view strings.Builder
-	view.WriteString("Actions: ")
+	view := stringutil.NewBuilder().Write("Actions: ")
 
 	if len(m.Actions) > 0 {
 		for index, action := range m.Actions {
@@ -37,15 +35,15 @@ func (m *Model) Render() string {
 				lipgloss.NewRange(1, len(action), appstyle.NewAppStyle()),
 			)
 
-			view.WriteString(styledAction)
+			view.Write(styledAction)
 
 			isLast := index == len(m.Actions)-1
 			if !isLast {
-				view.WriteString(" • ")
+				view.Write(" • ")
 			}
 		}
 	} else {
-		view.WriteString("None")
+		view.Write("None")
 	}
 
 	switch m.footerType {

@@ -1,12 +1,11 @@
 package event
 
 import (
-	"strings"
-
 	"github.com/oklog/ulid/v2"
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/util"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type TurnKeeper struct {
@@ -61,18 +60,22 @@ func (t *TurnKeeper) Next() {
 
 	events := t.EventTracker.GetRandomEvents()
 
-	var toastMessage strings.Builder
+	var toastMessage stringutil.Builder
 	for _, effect := range expiredEffects {
-		toastMessage.WriteString(effect.GetMessageEnd() + "\n")
+		toastMessage.WriteLn(effect.GetMessageEnd())
 	}
 
 	for _, event := range events {
-		toastMessage.WriteString("\n" + event.Name + "\n\n" + event.Description + "\n")
+		toastMessage.
+			Ln().
+			WriteLn(event.Name).
+			Ln().
+			WriteLn(event.Description)
 		t.player.AddMoney(event.Money)
 		t.player.AddEffects(event.Effects...)
 	}
 
-	if toastMessage.Len() > 0 {
+	if toastMessage.IsNotBlank() {
 		t.toast.Message(toastMessage.String())
 	}
 }

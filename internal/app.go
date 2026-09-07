@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
@@ -17,6 +15,7 @@ import (
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	toastcmp "github.com/randomvlad/trader-vlads/internal/component/toast"
 	"github.com/randomvlad/trader-vlads/internal/util"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type GameData struct {
@@ -77,30 +76,30 @@ func (gd *GameData) Init() tea.Cmd {
 }
 
 func (gd *GameData) View() tea.View {
-	var view strings.Builder
+	var view stringutil.Builder
 
-	view.WriteString(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
+	// status bar
+	view.Write(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
 
-	view.WriteString(gd.tabs.View().Content + "\n")
+	// tabs and tab content
+	view.WriteLn(gd.tabs.View().Content)
 
 	activeTab := TabId(gd.tabs.ActiveTab)
 	switch activeTab {
 	case TabEvents:
 		activeTabContent := "Events History"
-		view.WriteString(appstyle.StyleTabView.Render(activeTabContent) + "\n")
+		view.WriteStylized(activeTabContent, appstyle.StyleTabView).Ln()
 	case TabMarket:
 		gd.marketModel.Resources = gd.player.Warehouse.Resources
-		view.WriteString(gd.marketModel.View().Content)
-		view.WriteString("\n")
+		view.WriteLn(gd.marketModel.View().Content)
 	case TabEquipment:
-		view.WriteString(gd.eqModel.View().Content)
-		view.WriteString("\n")
+		view.WriteLn(gd.eqModel.View().Content)
 	case TabStats:
-		view.WriteString(gd.statsModel.View().Content)
-		view.WriteString("\n")
+		view.WriteLn(gd.statsModel.View().Content)
 	}
 
-	view.WriteString(gd.actionFooter.Render())
+	// footer
+	view.Write(gd.actionFooter.Render())
 
 	layerMain := lipgloss.NewLayer(view.String())
 

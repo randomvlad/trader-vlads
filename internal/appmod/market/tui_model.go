@@ -1,16 +1,15 @@
 package market
 
 import (
-	"fmt"
 	"maps"
 	"slices"
 	"strconv"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	"github.com/randomvlad/trader-vlads/internal/util"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type Model struct {
@@ -113,8 +112,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func viewMarket(m *Market) string {
-	var view strings.Builder
-	view.WriteString("Market:\n")
+	view := stringutil.NewBuilder().WriteLn("Market:")
 
 	itemNames := slices.Sorted(maps.Keys(m.Resources))
 
@@ -136,31 +134,30 @@ func viewMarket(m *Market) string {
 			changeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#D3D3D3"))
 		}
 
-		view.WriteString(fmt.Sprintf(
+		view.Writef(
 			" %v: %v (%v)\n",
 			name,
 			util.FormatCurrency(item.PriceCurrent),
 			changeStyle.Render(changeDisplay),
-		))
+		)
 	}
 	return view.String()
 }
 
 func viewWarehouse(resources map[string]int) string {
-	var view strings.Builder
-	view.WriteString("Your Warehouse:\n")
+	view := stringutil.NewBuilder().WriteLn("Your Warehouse:")
 	hasItems := false
 	items := slices.Sorted(maps.Keys(resources))
 	for _, item := range items {
 		count := resources[item]
 		if count > 0 {
 			hasItems = true
-			view.WriteString(fmt.Sprintf(" - %v: %v\n", item, count))
+			view.Writef(" - %v: %v\n", item, count)
 		}
 	}
 
 	if !hasItems {
-		view.WriteString("   Empty\n")
+		view.WriteLn("   Empty")
 	}
 
 	return view.String()

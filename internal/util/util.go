@@ -78,11 +78,3 @@ func GetOrDefault[T comparable](val, def T) T {
 	}
 	return val
 }
-
-func Truncate(value string, maxLength int) string {
-	runes := []rune(value)
-	if len(runes) <= maxLength {
-		return value
-	}
-	return string(runes[:maxLength])
-}

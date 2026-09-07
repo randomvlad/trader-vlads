@@ -5,12 +5,12 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
-	"github.com/randomvlad/trader-vlads/internal/util"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type Model struct {
 	title      string
-	body       util.StringBuilder
+	body       stringutil.Builder
 	bodyLayers []*lipgloss.Layer
 	footer     *actionfooter.Model
 	visual     *modelVisual
@@ -92,7 +92,7 @@ func (p *Model) RenderTeaView() tea.View {
 }
 
 func (p *Model) renderBodyWithFooter() string {
-	var render util.StringBuilder
+	var render stringutil.Builder
 
 	panelStyle := p.visual.stylePanel
 
@@ -122,13 +122,13 @@ func (p *Model) renderTopBorderWithTitle() string {
 
 	borderDef := lipgloss.RoundedBorder()
 
-	return new(util.StringBuilder).
+	return new(stringutil.Builder).
 		WithStyle(styleBorderTop).
 		Write(borderDef.TopLeft).
 		WriteRepeat(borderDef.Top, sideLengthLeft).
 		Write("[").
 		WriteStylized(" ✧ ", stylePointedStart).
-		WriteStylized(util.Truncate(p.title, 60), styleTitle).
+		WriteStylized(stringutil.Truncate(p.title, 60), styleTitle).
 		WriteStylized(" ✧ ", stylePointedStart).
 		Write("]").
 		WriteRepeat(borderDef.Top, sideLengthRight).

@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 // Group is a collection of fields that are displayed together with a page of
@@ -329,7 +330,7 @@ func (g *Group) styles() huh.GroupStyles {
 }
 
 func (g *Group) getContent() (int, string) {
-	var fields strings.Builder
+	var fields stringutil.Builder
 	offset := 0
 
 	gap := g.getTheme().FieldSeparator.Render()
@@ -337,15 +338,15 @@ func (g *Group) getContent() (int, string) {
 	// if the focused field is requesting it be zoomed, only show that field.
 	if g.selector.Selected().Zoom() {
 		g.selector.Selected().WithHeight(g.height)
-		fields.WriteString(g.selector.Selected().View().Content)
+		fields.Write(g.selector.Selected().View().Content)
 	} else {
 		g.selector.Range(func(i int, field Field) bool {
-			fields.WriteString(field.View().Content)
+			fields.Write(field.View().Content)
 			if i == g.selector.Index() {
 				offset = lipgloss.Height(fields.String()) - lipgloss.Height(field.View().Content)
 			}
 			if i < g.selector.Total()-1 {
-				fields.WriteString(gap)
+				fields.Write(gap)
 			}
 			return true
 		})

@@ -1,15 +1,14 @@
 package equipment
 
 import (
-	"fmt"
 	"strconv"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
+	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type Model struct {
@@ -133,9 +132,7 @@ func (m *Model) moveCursorPosition(nextOrPrev bool) {
 
 func (m *Model) renderEq() string {
 
-	var view strings.Builder
-
-	view.WriteString("You are using:\n")
+	view := stringutil.NewBuilder().WriteLn("You are using:")
 
 	eq := m.player.GetEquipped()
 
@@ -176,37 +173,38 @@ func (m *Model) renderEq() string {
 		}
 
 		if m.selectionIndex == bodyPartIndex {
-			view.WriteString(appstyle.SelectionPointer)
+			view.Write(appstyle.SelectionPointer)
 		} else {
-			view.WriteString(" ")
+			view.Write(" ")
 		}
 
-		view.WriteString(fmt.Sprintf("   %-22s %s\n", wornOn, eqObjectDisplay))
+		view.Writef("   %-22s %s\n", wornOn, eqObjectDisplay)
 	}
 
 	return view.String()
 }
 
 func (m *Model) renderInv() string {
-	var view strings.Builder
 
 	inventory := m.player.GetInventory()
 	count := len(inventory)
-	view.WriteString("You are carrying (" + strconv.Itoa(count) + "):\n")
+
+	view := stringutil.NewBuilder().
+		WriteLn("You are carrying (" + strconv.Itoa(count) + "):")
 
 	positionEqOffset := len(m.player.GetEquipped())
 
 	if count > 0 {
 		for index, object := range inventory {
 			if (index + positionEqOffset) == m.selectionIndex {
-				view.WriteString(appstyle.SelectionPointer)
+				view.Write(appstyle.SelectionPointer)
 			} else {
-				view.WriteString(" ")
+				view.Write(" ")
 			}
-			view.WriteString("   " + object.Name + "\n")
+			view.WriteLn("   " + object.Name)
 		}
 	} else {
-		view.WriteString("    Nothing\n")
+		view.WriteLn("    Nothing")
 	}
 
 	return view.String()
