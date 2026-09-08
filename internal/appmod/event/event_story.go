@@ -55,7 +55,7 @@ func (s *StarterSetStory) Render() string {
 			render.Tab().WriteLn(itemName)
 		}
 	case 2:
-		render.Write("You place the items in your inventory. Might be a good idea to try them on next.")
+		render.WriteLn("You place the items in your inventory. Might be a good idea to try them on next.")
 	}
 	return render.String()
 }

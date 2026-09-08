@@ -101,36 +101,14 @@ func (p *Model) RenderTeaView() tea.View {
 func (p *Model) renderBodyWithFooter() string {
 	var render stringutil.Builder
 
-	includeTitle := p.title != ""
-	includeFooter := p.footer != nil
-	bodyHeight := p.visual.height
-	if includeFooter {
-		bodyHeight -= 2 // hard coding footer height for now
+	styleBody := p.getComputedBodyStyle()
+
+	if p.title != "" {
+		// if title is present, then custom render the top border with embedded title
+		render.WriteLn(p.renderTopBorderWithTitle())
 	}
 
-	if includeTitle {
-		bodyHeight -= 1 // TODO: is this correct? verify ... it appears to work but don't understand why. because of border top false?
-	}
-
-	styleBody := p.visual.styleBody.
-		Width(p.visual.width).
-		Height(bodyHeight)
-
-	if includeFooter {
-		// Compliments the border of a tab footer that follows immediately a tab body
-		b, top, right, bottom, left := styleBody.GetBorder()
-		b.BottomLeft = "├"
-		b.BottomRight = "┤"
-		styleBody = styleBody.Border(b, top, right, bottom, left)
-	}
-
-	if includeTitle {
-		// disable default lipgloss border top, title is part of top border and requires custom rendering
-		styleBody = styleBody.BorderTop(false)
-		render.Write(p.renderTopBorderWithTitle())
-	}
-
-	render.WriteStyle(p.body.String(), styleBody) // this changes depending on the footer
+	render.WriteStyle(p.body.String(), styleBody)
 
 	if p.footer != nil {
 		p.footer.WithWidth(p.visual.width)
@@ -153,7 +131,7 @@ func (p *Model) renderTopBorderWithTitle() string {
 
 	borderDef := lipgloss.RoundedBorder()
 
-	return new(stringutil.Builder).
+	return stringutil.NewBuilder().
 		WithStyle(styleBorderTop).
 		Write(borderDef.TopLeft).
 		WriteRepeat(borderDef.Top, sideLengthLeft).
@@ -163,6 +141,32 @@ func (p *Model) renderTopBorderWithTitle() string {
 		WriteStyle(" ✧ ", stylePointedStart).
 		Write("]").
 		WriteRepeat(borderDef.Top, sideLengthRight).
-		WriteLn(borderDef.TopRight).
+		Write(borderDef.TopRight).
 		String()
+}
+
+func (p *Model) getComputedBodyStyle() lipgloss.Style {
+
+	computed := p.visual.styleBody.Width(p.visual.width)
+	heightBody := p.visual.height
+
+	if p.footer != nil {
+		heightBody -= 2 // account for footer getting rendered separately
+
+		// Configure body border to seamlessly connect with footer border that follows
+		border, top, right, bottom, left := computed.GetBorder()
+		border.BottomLeft = "├"
+		border.BottomRight = "┤"
+		computed = computed.Border(border, top, right, bottom, left)
+	}
+
+	if p.title != "" {
+		// top border with title takes 1 line and is rendered before the body starts
+		heightBody -= 1
+
+		// disable default lipgloss border top, title is part of top border and requires custom rendering
+		computed = computed.BorderTop(false)
+	}
+
+	return computed.Height(heightBody)
 }
