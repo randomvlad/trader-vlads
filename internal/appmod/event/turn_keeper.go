@@ -3,6 +3,7 @@ package event
 import (
 	"github.com/oklog/ulid/v2"
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/util"
 	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
@@ -34,8 +35,8 @@ type ToastMessenger interface {
 	Clear()
 }
 
-func NewTurnKeeper(player PlayerTurnService, market MarketService, random *util.RandomGenerator, toast ToastMessenger) *TurnKeeper {
-	eventTracker := NewEventTracker(player, random)
+func NewTurnKeeper(player PlayerTurnService, market MarketService, keyBinder *keybind.KeyBinder, random *util.RandomGenerator, toast ToastMessenger) *TurnKeeper {
+	eventTracker := NewEventTracker(player, keyBinder, random)
 	return &TurnKeeper{
 		turn:         1,
 		player:       player,

@@ -5,6 +5,7 @@ import (
 	"charm.land/lipgloss/v2"
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	ev "github.com/randomvlad/trader-vlads/internal/appmod/event"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
 	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
 	p "github.com/randomvlad/trader-vlads/internal/appmod/player"
 	appstats "github.com/randomvlad/trader-vlads/internal/appmod/stats"
@@ -25,6 +26,7 @@ type GameData struct {
 	eqModel      *eq.Model
 	statsModel   *appstats.Model
 	eventTrack   *ev.EventTracker
+	keyBinder    *keybind.KeyBinder
 	tabs         *tabs.Model
 	actionFooter *actionfooter.Model
 	toast        *toastcmp.Toast
@@ -41,18 +43,20 @@ const (
 )
 
 func NewGame() *GameData {
+	keyBinder := keybind.NewKeyBinder()
 	random := util.NewRandomGenerator(nil)
 
 	market := appmarket.NewMarket(random)
 	player := p.NewPlayer(market, random)
 	toast := &toastcmp.Toast{}
-	turnKeeper := ev.NewTurnKeeper(player, market, random, toast)
+	turnKeeper := ev.NewTurnKeeper(player, market, keyBinder, random, toast)
 
 	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
 
 	return &GameData{
 		player:       player,
 		turnKeeper:   turnKeeper,
+		keyBinder:    keyBinder,
 		eqModel:      eq.NewTuiModel(player, toast),
 		marketModel:  appmarket.NewTuiModel(market, player, toast),
 		statsModel:   appstats.NewTuiModel(player),
@@ -107,10 +111,16 @@ func (gd *GameData) View() tea.View {
 
 	activeEvent := gd.turnKeeper.EventTracker.GetActiveEvent()
 	if activeEvent != nil {
+
+		var actionNames []string
+		for _, action := range activeEvent.Story.GetActions() {
+			actionNames = append(actionNames, action.Name)
+		}
+
 		panel := apppanel.NewModel().
-			WithTitle(activeEvent.Story.Name).
-			WithFooter(activeEvent.Story.GetAvailableActions()...).
-			Write(activeEvent.Story.Render())
+			WithTitle(activeEvent.Story.GetName()).
+			WithFooter(actionNames...).
+			Write(activeEvent.Story.View())
 
 		layerPopup := lipgloss.NewLayer(panel.Render()).X(20).Y(9).Z(1)
 		compositor.AddLayers(layerPopup)
@@ -153,7 +163,10 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !globalKeyPress {
 		activeEvent := gd.turnKeeper.EventTracker.GetActiveEvent()
 		if activeEvent != nil {
-			activeEvent.Story.Update(msg)
+			if gd.keyBinder.IsBound(activeEvent.Story.GetStateId(), msg) {
+				cmd := gd.keyBinder.Execute(activeEvent.Story.GetStateId(), msg)
+				cmds = append(cmds, cmd)
+			}
 		} else {
 			switch TabId(gd.tabs.ActiveTab) {
 			case TabMarket:

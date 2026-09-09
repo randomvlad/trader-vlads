@@ -2,11 +2,13 @@ package event
 
 import (
 	"github.com/oklog/ulid/v2"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
 type EventTracker struct {
+	keyBinder       *keybind.KeyBinder
 	randomGenerator *util.RandomGenerator
 	activeEvent     *Event
 }
@@ -15,20 +17,21 @@ type Event struct {
 	Name        string
 	Description string
 	Money       int
-	Story       *StarterSetStory
+	Story       Story
 	EffectDefs  []eff.EffectInstanceCreator
 	Effects     []eff.StatusEffect
 }
 
-func NewEventTracker(player PlayerTurnService, r *util.RandomGenerator) *EventTracker {
+func NewEventTracker(player PlayerTurnService, keyBinder *keybind.KeyBinder, r *util.RandomGenerator) *EventTracker {
 
 	name := "To New Beginnings"
 	event := &Event{
 		Name:  name,
-		Story: NewStarterSetStory(name, player, r),
+		Story: NewStoryNewBeginnings(name, player, keyBinder, r),
 	}
 
 	return &EventTracker{
+		keyBinder:       keyBinder,
 		randomGenerator: r,
 		activeEvent:     event,
 	}
@@ -74,7 +77,7 @@ func (t *EventTracker) GetEvents() []*Event {
 }
 
 func (t *EventTracker) GetActiveEvent() *Event {
-	if t.activeEvent != nil && !t.activeEvent.Story.Complete {
+	if t.activeEvent != nil && !t.activeEvent.Story.IsComplete() {
 		return t.activeEvent
 	} else {
 		return nil
