@@ -13,10 +13,10 @@ type EventTracker struct {
 	activeEvent     *Event
 }
 
-type Event struct {
+type Event struct { // TODO: can/should Event and Story collapse?
 	Name        string
 	Description string
-	Money       int
+	Money       int // TODO: move money and effect grants into story. each story has decisions
 	Story       Story
 	EffectDefs  []eff.EffectInstanceCreator
 	Effects     []eff.StatusEffect
@@ -27,8 +27,10 @@ func NewEventTracker(player PlayerTurnService, keyBinder *keybind.KeyBinder, r *
 	name := "To New Beginnings"
 	event := &Event{
 		Name:  name,
-		Story: NewStoryNewBeginnings(name, player, keyBinder, r),
+		Story: NewStoryNewBeginnings(name, player, r),
 	}
+
+	keyBinder.AddActions(event.Story.GetActions())
 
 	return &EventTracker{
 		keyBinder:       keyBinder,

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
 )
 
 type KeyBinder struct {
@@ -36,6 +37,23 @@ func (r *KeyBinder) Add(contextId string, key string, f func() tea.Cmd) *KeyBind
 func (r *KeyBinder) Remove(k KeyContext) *KeyBinder {
 	delete(r.bindings, k)
 	return r
+}
+
+func (b *KeyBinder) AddAction(contextId string, action appaction.AppAction) *KeyBinder {
+	return b.Add(contextId, action.GetKeyPress(), func() tea.Cmd {
+		actionFunc := action.GetActionFunc()
+		actionFunc()
+		return nil
+	})
+}
+
+func (b *KeyBinder) AddActions(contextActions map[string][]appaction.AppAction) *KeyBinder {
+	for contextId, actions := range contextActions {
+		for _, action := range actions {
+			b.AddAction(contextId, action)
+		}
+	}
+	return b
 }
 
 func (r *KeyBinder) IsBound(contextId string, msg tea.Msg) bool {

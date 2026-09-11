@@ -5,6 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	apppanel "github.com/randomvlad/trader-vlads/internal/component/panel"
 )
@@ -21,11 +22,11 @@ type modelVisual struct {
 	activeTab   lipgloss.Style
 }
 
-func NewModel(tabNames []string, width int) *Model {
+func NewModel(tabNames ...string) *Model {
 	return &Model{
 		Tabs:      tabNames,
 		ActiveTab: 0,
-		visual:    newModelVisual(width),
+		visual:    newModelVisual(appstyle.AppWidth),
 	}
 }
 
@@ -53,7 +54,7 @@ func newModelVisual(width int) *modelVisual {
 	}
 }
 
-func NewTabPanel(actions ...string) *apppanel.Model {
+func NewTabPanel(actions ...appaction.AppAction) *apppanel.Model {
 
 	styleTabBody := appstyle.NewAppStyle().
 		Padding(0, 2).

@@ -6,6 +6,7 @@ import (
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	ev "github.com/randomvlad/trader-vlads/internal/appmod/event"
 	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
 	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
 	p "github.com/randomvlad/trader-vlads/internal/appmod/player"
 	appstats "github.com/randomvlad/trader-vlads/internal/appmod/stats"
@@ -51,7 +52,19 @@ func NewGame() *GameData {
 	toast := &toastcmp.Toast{}
 	turnKeeper := ev.NewTurnKeeper(player, market, keyBinder, random, toast)
 
-	tabNames := []string{"📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"}
+	actionNextWeek := appaction.NewAppAction("Next Week", func() {
+		// TODO: implement fully
+		turnKeeper.Next()
+	})
+
+	actionQuit := appaction.NewAppAction("Quit", func() {
+		toast.Message("Farewell and safe travels!")
+		// TODO: implement fully & support return tea.Quit
+	})
+
+	keyBinder.
+		AddAction("global", actionNextWeek).
+		AddAction("global", actionQuit)
 
 	return &GameData{
 		player:       player,
@@ -60,8 +73,8 @@ func NewGame() *GameData {
 		eqModel:      eq.NewTuiModel(player, toast),
 		marketModel:  appmarket.NewTuiModel(market, player, toast),
 		statsModel:   appstats.NewTuiModel(player),
-		tabs:         tabs.NewModel(tabNames, appstyle.AppWidth),
-		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone, "Next Week", "Quit"),
+		tabs:         tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
+		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone, actionNextWeek, actionQuit),
 		toast:        toast,
 		status:       status.New(),
 	}
@@ -111,15 +124,9 @@ func (gd *GameData) View() tea.View {
 
 	activeEvent := gd.turnKeeper.EventTracker.GetActiveEvent()
 	if activeEvent != nil {
-
-		var actionNames []string
-		for _, action := range activeEvent.Story.GetActions() {
-			actionNames = append(actionNames, action.Name)
-		}
-
 		panel := apppanel.NewModel().
 			WithTitle(activeEvent.Story.GetName()).
-			WithFooter(actionNames...).
+			WithFooter(activeEvent.Story.GetCurrentActions()...).
 			Write(activeEvent.Story.View())
 
 		layerPopup := lipgloss.NewLayer(panel.Render()).X(20).Y(9).Z(1)
