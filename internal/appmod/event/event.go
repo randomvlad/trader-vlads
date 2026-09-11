@@ -1,9 +1,7 @@
 package event
 
 import (
-	"github.com/oklog/ulid/v2"
 	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
-	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
@@ -11,16 +9,7 @@ type EventTracker struct {
 	keyBinder       *keybind.KeyBinder
 	player          PlayerTurnService
 	randomGenerator *util.RandomGenerator
-	activeEvent     *Event
-}
-
-type Event struct { // TODO: can/should Event and Story collapse?
-	Name        string
-	Description string
-	Money       int // TODO: move money and effect grants into story. each story has decisions
-	Story       Story
-	EffectDefs  []eff.EffectInstanceCreator
-	Effects     []eff.StatusEffect
+	activeStory     Story
 }
 
 func NewEventTracker(player PlayerTurnService, keyBinder *keybind.KeyBinder, r *util.RandomGenerator) *EventTracker {
@@ -32,67 +21,43 @@ func NewEventTracker(player PlayerTurnService, keyBinder *keybind.KeyBinder, r *
 	}
 
 	// TODO: corresponds to start of the game (turn 0). introduce a dedicated "new turn" phase
-	tracker.activeEvent = &Event{
-		Story: NewStoryNewBeginnings(player, r),
-	}
-	keyBinder.AddActions(tracker.activeEvent.Story.GetActions())
-
+	tracker.setActive(NewStoryNewBeginnings(player, r))
 	return tracker
 }
 
-func (t *EventTracker) GetEvents() []*Event {
-	return []*Event{
-		{
-			Name:        "Modest Inheritance (+50)",
-			Description: "A distant relative has passed away and left you a modest sum of money.",
-			Money:       50,
-		},
-		{
-			Name:        "Unexpected Bills (-25)",
-			Description: "An unexpected expense has come up and must be taken care of.",
-			Money:       -25,
-		},
-		{
-			Name:        "Winds of Fortune (+100)",
-			Description: "You're in luck! An anonymous benefactor has donated to your cause.",
-			Money:       100,
-		},
-		{
-			Name:        "Bounty (-100)",
-			Description: "Tough times dictate tough measures. You place a bounty with The House of Ancients to eliminate a hostile rival.",
-			Money:       -100,
-		},
-	}
-}
-
-func (t *EventTracker) GetActiveEvent() *Event {
-	if t.activeEvent != nil && !t.activeEvent.Story.IsComplete() {
-		return t.activeEvent
+func (t *EventTracker) GetActiveStory() Story {
+	if t.activeStory != nil && !t.activeStory.IsComplete() {
+		return t.activeStory
 	} else {
 		return nil
 	}
 }
 
-func (t *EventTracker) GenerateActiveEvent(turn int) []*Event {
-	var randomEvents []*Event // for now limiting to 1 random event per method call
+func (t *EventTracker) GenerateActiveStory(turn int) {
+	// for now limiting to 1 event per method call/turn
 
 	if turn == 2 { // TODO: introduce a schedule later on.
-		t.activeEvent = &Event{
-			Story: NewStoryEvergreenBlessings(t.player, t.randomGenerator),
-		}
-		t.keyBinder.AddActions(t.activeEvent.Story.GetActions())
+		t.setActive(NewStoryEvergreenBlessings(t.player, t.randomGenerator))
+	} else if turn == 3 {
+		t.setActive(NewStoryFortune(t.player))
 	} else {
 		if t.randomGenerator.RollChance(25) {
-			event := t.randomGenerator.Pick(t.GetEvents())
-
-			var effects []eff.StatusEffect
-			for _, def := range event.EffectDefs {
-				effects = append(effects, def.Create(t.randomGenerator, ulid.Make(), "event"))
-			}
-			event.Effects = effects
-			randomEvents = append(randomEvents, event)
+			event := t.randomGenerator.Pick(t.getStories())
+			t.setActive(event)
 		}
 	}
+}
 
-	return randomEvents
+func (t *EventTracker) setActive(story Story) {
+	t.activeStory = story
+	t.keyBinder.AddActions(story.GetActions())
+}
+
+func (t *EventTracker) getStories() []Story {
+	// TODO: introduce a story registry. Create stories more efficiently. Pick from a list of strings. Create/generate only if story is picked.
+	return []Story{
+		NewStoryBills(t.player),
+		NewStoryInheritance(t.player),
+		NewStoryBounty(t.player),
+	}
 }

@@ -59,21 +59,11 @@ func (t *TurnKeeper) Next() {
 
 	expiredEffects := t.applyEffects()
 
-	events := t.EventTracker.GenerateActiveEvent(t.turn)
+	t.EventTracker.GenerateActiveStory(t.turn)
 
 	var toastMessage stringutil.Builder
 	for _, effect := range expiredEffects {
 		toastMessage.WriteLn(effect.GetMessageEnd())
-	}
-
-	for _, event := range events {
-		toastMessage.
-			Ln().
-			WriteLn(event.Name).
-			Ln().
-			WriteLn(event.Description)
-		t.player.AddMoney(event.Money)
-		t.player.AddEffects(event.Effects...)
 	}
 
 	if toastMessage.IsNotBlank() {

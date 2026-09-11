@@ -122,12 +122,12 @@ func (gd *GameData) View() tea.View {
 
 	compositor := lipgloss.NewCompositor(layerMain)
 
-	activeEvent := gd.turnKeeper.EventTracker.GetActiveEvent()
-	if activeEvent != nil {
+	activeStory := gd.turnKeeper.EventTracker.GetActiveStory()
+	if activeStory != nil {
 		panel := apppanel.NewModel().
-			WithTitle(activeEvent.Story.GetName()).
-			WithFooter(activeEvent.Story.GetCurrentActions()...).
-			Write(activeEvent.Story.View())
+			WithTitle(activeStory.GetName()).
+			WithFooter(activeStory.GetCurrentActions()...).
+			Write(activeStory.View())
 
 		layerPopup := lipgloss.NewLayer(panel.Render()).X(20).Y(9).Z(1)
 		compositor.AddLayers(layerPopup)
@@ -168,10 +168,10 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if !globalKeyPress {
-		activeEvent := gd.turnKeeper.EventTracker.GetActiveEvent()
-		if activeEvent != nil {
-			if gd.keyBinder.IsBound(activeEvent.Story.GetStateId(), msg) {
-				cmd := gd.keyBinder.Execute(activeEvent.Story.GetStateId(), msg)
+		activeStory := gd.turnKeeper.EventTracker.GetActiveStory()
+		if activeStory != nil {
+			if gd.keyBinder.IsBound(activeStory.GetStateId(), msg) {
+				cmd := gd.keyBinder.Execute(activeStory.GetStateId(), msg)
 				cmds = append(cmds, cmd)
 			}
 		} else {

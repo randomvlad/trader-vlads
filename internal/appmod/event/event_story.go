@@ -21,25 +21,6 @@ type StoryScene struct {
 	GetActions func() []press.KeyAction
 }
 
-//type StoryScreenAction struct {
-//	keybind.KeyPressAction
-//	Name       string
-//	KeyPress   string
-//	actionFunc func()
-//}
-//
-//func (s StoryScreenAction) GetName() string {
-//	return s.Name
-//}
-//
-//func (s StoryScreenAction) GetKeyPress() string {
-//	return s.KeyPress
-//}
-//
-//func (s StoryScreenAction) GetActionFunc() func() {
-//	return s.actionFunc
-//}
-
 type BaseStory struct {
 	Story
 	id           string
