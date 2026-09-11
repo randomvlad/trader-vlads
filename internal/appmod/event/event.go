@@ -9,6 +9,7 @@ import (
 
 type EventTracker struct {
 	keyBinder       *keybind.KeyBinder
+	player          PlayerTurnService
 	randomGenerator *util.RandomGenerator
 	activeEvent     *Event
 }
@@ -24,19 +25,19 @@ type Event struct { // TODO: can/should Event and Story collapse?
 
 func NewEventTracker(player PlayerTurnService, keyBinder *keybind.KeyBinder, r *util.RandomGenerator) *EventTracker {
 
-	name := "To New Beginnings"
-	event := &Event{
-		Name:  name,
-		Story: NewStoryNewBeginnings(name, player, r),
-	}
-
-	keyBinder.AddActions(event.Story.GetActions())
-
-	return &EventTracker{
+	tracker := &EventTracker{
 		keyBinder:       keyBinder,
+		player:          player,
 		randomGenerator: r,
-		activeEvent:     event,
 	}
+
+	// TODO: corresponds to start of the game (turn 0). introduce a dedicated "new turn" phase
+	tracker.activeEvent = &Event{
+		Story: NewStoryNewBeginnings(player, r),
+	}
+	keyBinder.AddActions(tracker.activeEvent.Story.GetActions())
+
+	return tracker
 }
 
 func (t *EventTracker) GetEvents() []*Event {
@@ -61,20 +62,6 @@ func (t *EventTracker) GetEvents() []*Event {
 			Description: "Tough times dictate tough measures. You place a bounty with The House of Ancients to eliminate a hostile rival.",
 			Money:       -100,
 		},
-		{
-			Name:        "Blessings of Evergreen",
-			Description: "The forest nymphs of Evergreen have bestowed their blessings upon you.",
-			EffectDefs: []eff.EffectInstanceCreator{
-				&eff.GrantResourceEffectDef{
-					BaseEffectDef: &eff.BaseEffectDef{
-						Name:     "Blessings of Evergreen",
-						Duration: eff.NewDuration().Turns(2, 4),
-					},
-					Resource: "Wood",
-					Amount:   util.NewRangeInt(1, 1),
-				},
-			},
-		},
 	}
 }
 
@@ -86,18 +73,25 @@ func (t *EventTracker) GetActiveEvent() *Event {
 	}
 }
 
-func (t *EventTracker) GetRandomEvents() []*Event {
+func (t *EventTracker) GenerateActiveEvent(turn int) []*Event {
 	var randomEvents []*Event // for now limiting to 1 random event per method call
 
-	if t.randomGenerator.RollChance(25) {
-		event := t.randomGenerator.Pick(t.GetEvents())
-
-		var effects []eff.StatusEffect
-		for _, def := range event.EffectDefs {
-			effects = append(effects, def.Create(t.randomGenerator, ulid.Make(), "event"))
+	if turn == 2 { // TODO: introduce a schedule later on.
+		t.activeEvent = &Event{
+			Story: NewStoryEvergreenBlessings(t.player, t.randomGenerator),
 		}
-		event.Effects = effects
-		randomEvents = append(randomEvents, event)
+		t.keyBinder.AddActions(t.activeEvent.Story.GetActions())
+	} else {
+		if t.randomGenerator.RollChance(25) {
+			event := t.randomGenerator.Pick(t.GetEvents())
+
+			var effects []eff.StatusEffect
+			for _, def := range event.EffectDefs {
+				effects = append(effects, def.Create(t.randomGenerator, ulid.Make(), "event"))
+			}
+			event.Effects = effects
+			randomEvents = append(randomEvents, event)
+		}
 	}
 
 	return randomEvents

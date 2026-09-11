@@ -59,7 +59,7 @@ func (t *TurnKeeper) Next() {
 
 	expiredEffects := t.applyEffects()
 
-	events := t.EventTracker.GetRandomEvents()
+	events := t.EventTracker.GenerateActiveEvent(t.turn)
 
 	var toastMessage stringutil.Builder
 	for _, effect := range expiredEffects {

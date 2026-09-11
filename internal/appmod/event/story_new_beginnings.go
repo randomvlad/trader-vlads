@@ -12,13 +12,9 @@ type StoryNewBeginnings struct {
 	*BaseStory
 }
 
-func NewStoryNewBeginnings(
-	name string,
-	player PlayerTurnService,
-	r *util.RandomGenerator,
-) *StoryNewBeginnings {
+func NewStoryNewBeginnings(player PlayerTurnService, r *util.RandomGenerator) *StoryNewBeginnings {
 	story := &StoryNewBeginnings{
-		BaseStory: NewBaseStory("NewBeginnings", name),
+		BaseStory: NewBaseStory("NewBeginnings", "To New Beginnings"),
 	}
 	story.initScenes(player, r)
 	return story
