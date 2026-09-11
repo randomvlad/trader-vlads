@@ -5,7 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
@@ -211,19 +211,19 @@ func (m *Model) renderInv() string {
 	return view.String()
 }
 
-func (m *Model) getActions() []appaction.AppAction {
-	var actions []appaction.AppAction
+func (m *Model) getActions() []press.KeyAction {
+	var actions []press.KeyAction
 
 	if m.selectionIndex < BodyPartsMax {
 		if m.player.HasEquipped(BodyPart(m.selectionIndex)) {
-			actions = append(actions, appaction.NewAppActionNoOp("Remove"))
+			actions = append(actions, press.NewKeyActionNoOp("Remove"))
 		}
 	} else {
 		invObject := m.getSelectedObject()
 		if invObject.IsWearable() {
-			actions = append(actions, appaction.NewAppActionNoOp("Wear"))
+			actions = append(actions, press.NewKeyActionNoOp("Wear"))
 		} else if invObject.IsUsable() {
-			actions = append(actions, appaction.NewAppActionNoOp("Use"))
+			actions = append(actions, press.NewKeyActionNoOp("Use"))
 		}
 	}
 

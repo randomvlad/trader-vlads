@@ -1,13 +1,13 @@
 package event
 
 import (
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 )
 
 type StorySceneBuilder struct {
 	name     string
 	viewFunc func() string
-	actions  []appaction.AppAction
+	actions  []press.KeyAction
 }
 
 func NewStorySceneBuilder(name string) *StorySceneBuilder {
@@ -29,7 +29,7 @@ func (b *StorySceneBuilder) ViewStatic(staticContent string) *StorySceneBuilder 
 }
 
 func (b *StorySceneBuilder) AddAction(name string, executeFunc func()) *StorySceneBuilder {
-	b.actions = append(b.actions, appaction.NewAppAction(name, executeFunc))
+	b.actions = append(b.actions, press.NewKeyAction(name, executeFunc))
 	return b
 }
 
@@ -49,7 +49,7 @@ func (b *StorySceneBuilder) Build() StoryScene {
 	return StoryScene{
 		Name: b.name,
 		View: b.viewFunc,
-		GetActions: func() []appaction.AppAction {
+		GetActions: func() []press.KeyAction {
 			return b.actions
 		},
 	}

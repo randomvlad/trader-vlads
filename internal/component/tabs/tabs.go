@@ -5,7 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	apppanel "github.com/randomvlad/trader-vlads/internal/component/panel"
 )
@@ -54,7 +54,7 @@ func newModelVisual(width int) *modelVisual {
 	}
 }
 
-func NewTabPanel(actions ...appaction.AppAction) *apppanel.Model {
+func NewTabPanel(actions ...press.KeyAction) *apppanel.Model {
 
 	styleTabBody := appstyle.NewAppStyle().
 		Padding(0, 2).

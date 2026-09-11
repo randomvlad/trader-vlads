@@ -2,14 +2,14 @@ package actionfooter
 
 import (
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
 type Model struct {
 	footerType FooterType
-	appActions []appaction.AppAction
+	actions    []press.KeyAction
 	visual     *modelVisual
 }
 
@@ -28,10 +28,10 @@ const (
 	FooterNoStyle
 )
 
-func NewModel(footerType FooterType, actions ...appaction.AppAction) *Model {
+func NewModel(footerType FooterType, actions ...press.KeyAction) *Model {
 	return &Model{
 		footerType: footerType,
-		appActions: actions,
+		actions:    actions,
 		visual: &modelVisual{
 			width:             appstyle.AppWidth,
 			styleBorder:       getStyleBorder(footerType),
@@ -54,15 +54,15 @@ func (m *Model) WithStyle(style lipgloss.Style) *Model {
 func (m *Model) Render() string {
 	view := stringutil.NewBuilder().Write("Actions: ")
 
-	if len(m.appActions) > 0 {
-		for index, appAction := range m.appActions {
+	if len(m.actions) > 0 {
+		for index, action := range m.actions {
 			view.WriteStyleRanges(
-				appAction.GetName(),
+				action.Name,
 				lipgloss.NewRange(0, 1, m.visual.styleFirstLetter),
-				lipgloss.NewRange(1, len(appAction.GetName()), appstyle.NewAppStyle()),
+				lipgloss.NewRange(1, len(action.Name), appstyle.NewAppStyle()),
 			)
 
-			isLast := index == len(m.appActions)-1
+			isLast := index == len(m.actions)-1
 			if !isLast {
 				view.Write(" • ")
 			}

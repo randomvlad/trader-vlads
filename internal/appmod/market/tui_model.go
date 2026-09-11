@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	"github.com/randomvlad/trader-vlads/internal/util"
 	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
@@ -57,9 +57,9 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) View() tea.View {
 
 	panel := tabs.NewTabPanel(
-		appaction.NewAppActionNoOp("Buy"),
-		appaction.NewAppActionNoOp("Sell"),
-		appaction.NewAppActionNoOp("Unlock Resource"),
+		press.NewKeyActionNoOp("Buy"),
+		press.NewKeyActionNoOp("Sell"),
+		press.NewKeyActionNoOp("Unlock Resource"),
 	)
 
 	panel.

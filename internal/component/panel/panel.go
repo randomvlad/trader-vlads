@@ -3,7 +3,7 @@ package panel
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
 	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
@@ -58,7 +58,7 @@ func (p *Model) WithStyle(styleBody lipgloss.Style) *Model {
 	return p
 }
 
-func (p *Model) WithFooter(actions ...appaction.AppAction) *Model {
+func (p *Model) WithFooter(actions ...press.KeyAction) *Model {
 	p.footer = actionfooter.NewModel(actionfooter.FooterPanel, actions...)
 	return p
 }

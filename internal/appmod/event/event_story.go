@@ -1,7 +1,7 @@
 package event
 
 import (
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 )
 
 type Story interface {
@@ -9,8 +9,8 @@ type Story interface {
 	View() string
 	MarkComplete()
 	IsComplete() bool
-	GetCurrentActions() []appaction.AppAction
-	GetActions() map[string][]appaction.AppAction
+	GetCurrentActions() []press.KeyAction
+	GetActions() map[string][]press.KeyAction
 	GetStateId() string
 	SetCurrentScene(name string)
 }
@@ -18,7 +18,7 @@ type Story interface {
 type StoryScene struct {
 	Name       string
 	View       func() string
-	GetActions func() []appaction.AppAction
+	GetActions func() []press.KeyAction
 }
 
 //type StoryScreenAction struct {
@@ -76,13 +76,13 @@ func (b *BaseStory) IsComplete() bool {
 	return b.complete
 }
 
-func (b *BaseStory) GetCurrentActions() []appaction.AppAction {
+func (b *BaseStory) GetCurrentActions() []press.KeyAction {
 	current := b.currentScene
 	return b.scenes[current].GetActions()
 }
 
-func (b *BaseStory) GetActions() map[string][]appaction.AppAction {
-	mapActions := make(map[string][]appaction.AppAction)
+func (b *BaseStory) GetActions() map[string][]press.KeyAction {
+	mapActions := make(map[string][]press.KeyAction)
 	for _, scene := range b.scenes {
 		contextId := b.id + "_" + scene.Name
 		mapActions[contextId] = scene.GetActions() // TODO: revisit idea of making this a func rather than array of elements

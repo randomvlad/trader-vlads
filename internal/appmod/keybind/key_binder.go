@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 )
 
 type KeyBinder struct {
@@ -39,15 +39,14 @@ func (r *KeyBinder) Remove(k KeyContext) *KeyBinder {
 	return r
 }
 
-func (b *KeyBinder) AddAction(contextId string, action appaction.AppAction) *KeyBinder {
-	return b.Add(contextId, action.GetKeyPress(), func() tea.Cmd {
-		actionFunc := action.GetActionFunc()
-		actionFunc()
+func (b *KeyBinder) AddAction(contextId string, action press.KeyAction) *KeyBinder {
+	return b.Add(contextId, action.KeyPress, func() tea.Cmd {
+		action.ActionFunc()
 		return nil
 	})
 }
 
-func (b *KeyBinder) AddActions(contextActions map[string][]appaction.AppAction) *KeyBinder {
+func (b *KeyBinder) AddActions(contextActions map[string][]press.KeyAction) *KeyBinder {
 	for contextId, actions := range contextActions {
 		for _, action := range actions {
 			b.AddAction(contextId, action)

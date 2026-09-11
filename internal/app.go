@@ -6,7 +6,7 @@ import (
 	eq "github.com/randomvlad/trader-vlads/internal/appmod/equipment"
 	ev "github.com/randomvlad/trader-vlads/internal/appmod/event"
 	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/appaction"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	appmarket "github.com/randomvlad/trader-vlads/internal/appmod/market"
 	p "github.com/randomvlad/trader-vlads/internal/appmod/player"
 	appstats "github.com/randomvlad/trader-vlads/internal/appmod/stats"
@@ -52,12 +52,12 @@ func NewGame() *GameData {
 	toast := &toastcmp.Toast{}
 	turnKeeper := ev.NewTurnKeeper(player, market, keyBinder, random, toast)
 
-	actionNextWeek := appaction.NewAppAction("Next Week", func() {
+	actionNextWeek := press.NewKeyAction("Next Week", func() {
 		// TODO: implement fully
 		turnKeeper.Next()
 	})
 
-	actionQuit := appaction.NewAppAction("Quit", func() {
+	actionQuit := press.NewKeyAction("Quit", func() {
 		toast.Message("Farewell and safe travels!")
 		// TODO: implement fully & support return tea.Quit
 	})
