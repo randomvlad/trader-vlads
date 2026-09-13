@@ -3,7 +3,6 @@ package tabs
 import (
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
@@ -71,24 +70,12 @@ func NewTabPanel(actions ...press.KeyAction) *apppanel.Model {
 
 // TODO: []TabModel struct with fields: id, display, shortcut key?
 
-func (m *Model) Init() tea.Cmd {
-	return nil
+func (m *Model) SelectRight() {
+	m.ActiveTab = min(m.ActiveTab+1, len(m.Tabs)-1)
 }
 
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch keypress := msg.String(); keypress {
-		case "right", "tab":
-			m.ActiveTab = min(m.ActiveTab+1, len(m.Tabs)-1)
-			return m, nil
-		case "left", "shift+tab":
-			m.ActiveTab = max(m.ActiveTab-1, 0)
-			return m, nil
-		}
-	}
-
-	return m, nil
+func (m *Model) SelectLeft() {
+	m.ActiveTab = max(m.ActiveTab-1, 0)
 }
 
 func tabBorderWithBottom(left, middle, right string) lipgloss.Border {
@@ -99,7 +86,7 @@ func tabBorderWithBottom(left, middle, right string) lipgloss.Border {
 	return border
 }
 
-func (m *Model) View() tea.View {
+func (m *Model) View() string {
 	var renderedTabs []string
 	for tabIndex, tabName := range m.Tabs {
 		borderStyle := getTabStyle(tabIndex, m)
@@ -118,7 +105,7 @@ func (m *Model) View() tea.View {
 		viewContent = lipgloss.JoinHorizontal(lipgloss.Bottom, viewContent, spaceFiller)
 	}
 
-	return tea.NewView(viewContent)
+	return viewContent
 }
 
 func getTabStyle(tabIndex int, m *Model) lipgloss.Style {

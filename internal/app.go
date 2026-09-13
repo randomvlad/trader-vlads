@@ -52,20 +52,6 @@ func NewGame() *GameData {
 	toast := &toastcmp.Toast{}
 	turnKeeper := ev.NewTurnKeeper(player, market, keyBinder, random, toast)
 
-	actionNextWeek := press.NewKeyAction("Next Week", func() {
-		// TODO: implement fully
-		turnKeeper.Next()
-	})
-
-	actionQuit := press.NewKeyAction("Quit", func() {
-		toast.Message("Farewell and safe travels!")
-		// TODO: implement fully & support return tea.Quit
-	})
-
-	keyBinder.
-		AddAction("global", actionNextWeek).
-		AddAction("global", actionQuit)
-
 	return &GameData{
 		player:       player,
 		turnKeeper:   turnKeeper,
@@ -74,7 +60,7 @@ func NewGame() *GameData {
 		marketModel:  appmarket.NewTuiModel(market, player, toast),
 		statsModel:   appstats.NewTuiModel(player),
 		tabs:         tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
-		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone, actionNextWeek, actionQuit),
+		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone),
 		toast:        toast,
 		status:       status.New(),
 	}
@@ -83,13 +69,49 @@ func NewGame() *GameData {
 func (gd *GameData) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
+	gd.bindActions()
+
 	cmdMarket := gd.marketModel.Init()
 	cmds = append(cmds, cmdMarket)
 
-	cmdTabs := gd.tabs.Init()
-	cmds = append(cmds, cmdTabs)
-
 	return tea.Batch(cmds...)
+}
+
+func (gd *GameData) bindActions() {
+	actionNextWeek := press.NewKeyActionPermanent("Next Week", func() tea.Cmd {
+		gd.turnKeeper.Next()
+		return nil
+	})
+
+	actionQuit := press.NewKeyActionPermanent("Quit", func() tea.Cmd {
+		gd.toast.Message("Farewell and safe travels!")
+		return tea.Quit
+	})
+
+	actionTabLeft := press.NewAction("NavTabLeft").
+		WithPermanent(true).
+		WithKeyPress("left").
+		WithFunc(func() {
+			gd.tabs.SelectLeft()
+		})
+
+	actionTabRight := press.NewAction("NavTabRight").
+		WithPermanent(true).
+		WithKeyPress("right").
+		WithFunc(func() {
+			gd.tabs.SelectRight()
+		})
+
+	clearToast := press.NewAction("ClearToast").
+		WithPermanent(true).
+		WithKeyPress("esc").
+		WithFunc(func() {
+			gd.toast.Clear()
+		})
+
+	gd.keyBinder.AddActions("global", *actionTabLeft, *actionTabRight, *clearToast, actionNextWeek, actionQuit)
+
+	gd.actionFooter.SetActions(actionNextWeek, actionQuit)
 }
 
 func (gd *GameData) View() tea.View {
@@ -99,7 +121,7 @@ func (gd *GameData) View() tea.View {
 	view.Write(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
 
 	// tabs and tab content
-	view.WriteLn(gd.tabs.View().Content)
+	view.WriteLn(gd.tabs.View())
 
 	activeTab := TabId(gd.tabs.ActiveTab)
 	switch activeTab {
@@ -145,47 +167,25 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 
-	globalKeyPress := false
-
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "n", "N":
-			gd.turnKeeper.Next()
-			globalKeyPress = true
-		case "left", "right":
-			_, cmd := gd.tabs.Update(msg)
+	if gd.keyBinder.IsBound("global", msg) {
+		cmd := gd.keyBinder.Execute("global", msg)
+		cmds = append(cmds, cmd)
+	} else if story := gd.turnKeeper.EventTracker.GetActiveStory(); story != nil {
+		if gd.keyBinder.IsBound(story.GetStateId(), msg) {
+			cmd := gd.keyBinder.Execute(story.GetStateId(), msg)
 			cmds = append(cmds, cmd)
-			globalKeyPress = true
-		case "enter", "esc":
-			gd.toast.Clear()
-			// TODO: Key Press & App State → delegate to corresponding Model Update()
-			// need exact app state to give key presses the right context. For example: if user is on market AND buy/sell popup, then enter has different behavior
-		case "q", "ctrl+c":
-			gd.toast.Message("Farewell and safe travels!")
-			return gd, tea.Quit
 		}
-	}
-
-	if !globalKeyPress {
-		activeStory := gd.turnKeeper.EventTracker.GetActiveStory()
-		if activeStory != nil {
-			if gd.keyBinder.IsBound(activeStory.GetStateId(), msg) {
-				cmd := gd.keyBinder.Execute(activeStory.GetStateId(), msg)
-				cmds = append(cmds, cmd)
-			}
-		} else {
-			switch TabId(gd.tabs.ActiveTab) {
-			case TabMarket:
-				_, cmd := gd.marketModel.Update(msg)
-				cmds = append(cmds, cmd)
-			case TabEquipment:
-				_, cmd := gd.eqModel.Update(msg)
-				cmds = append(cmds, cmd)
-			case TabStats:
-				_, cmd := gd.statsModel.Update(msg)
-				cmds = append(cmds, cmd)
-			}
+	} else {
+		switch TabId(gd.tabs.ActiveTab) {
+		case TabMarket:
+			_, cmd := gd.marketModel.Update(msg)
+			cmds = append(cmds, cmd)
+		case TabEquipment:
+			_, cmd := gd.eqModel.Update(msg)
+			cmds = append(cmds, cmd)
+		case TabStats:
+			_, cmd := gd.statsModel.Update(msg)
+			cmds = append(cmds, cmd)
 		}
 	}
 

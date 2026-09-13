@@ -51,6 +51,10 @@ func (m *Model) WithStyle(style lipgloss.Style) *Model {
 	return m
 }
 
+func (m *Model) SetActions(actions ...press.KeyAction) {
+	m.actions = actions
+}
+
 func (m *Model) Render() string {
 	view := stringutil.NewBuilder().Write("Actions: ")
 

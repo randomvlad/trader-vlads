@@ -50,7 +50,7 @@ func (t *EventTracker) GenerateActiveStory(turn int) {
 
 func (t *EventTracker) setActive(story Story) {
 	t.activeStory = story
-	t.keyBinder.AddActions(story.GetActions())
+	t.keyBinder.AddActionsMap(story.GetActions())
 }
 
 func (t *EventTracker) getStories() []Story {

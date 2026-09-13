@@ -8,12 +8,12 @@ import (
 )
 
 type KeyBinder struct {
-	bindings map[KeyContext]func() tea.Cmd
+	bindings map[KeyContext]press.KeyAction
 }
 
 func NewKeyBinder() *KeyBinder {
 	return &KeyBinder{
-		bindings: make(map[KeyContext]func() tea.Cmd),
+		bindings: make(map[KeyContext]press.KeyAction),
 	}
 }
 
@@ -29,24 +29,24 @@ func NewKeyContext(contextId string, key string) KeyContext {
 	}
 }
 
-func (r *KeyBinder) Add(contextId string, key string, f func() tea.Cmd) *KeyBinder {
-	r.bindings[NewKeyContext(contextId, key)] = f
-	return r
-}
-
-func (r *KeyBinder) Remove(k KeyContext) *KeyBinder {
-	delete(r.bindings, k)
-	return r
+func (b *KeyBinder) Remove(k KeyContext) *KeyBinder {
+	delete(b.bindings, k)
+	return b
 }
 
 func (b *KeyBinder) AddAction(contextId string, action press.KeyAction) *KeyBinder {
-	return b.Add(contextId, action.KeyPress, func() tea.Cmd {
-		action.ActionFunc()
-		return nil
-	})
+	b.bindings[NewKeyContext(contextId, action.KeyPress)] = action
+	return b
 }
 
-func (b *KeyBinder) AddActions(contextActions map[string][]press.KeyAction) *KeyBinder {
+func (b *KeyBinder) AddActions(contextId string, actions ...press.KeyAction) *KeyBinder {
+	for _, action := range actions {
+		b.AddAction(contextId, action)
+	}
+	return b
+}
+
+func (b *KeyBinder) AddActionsMap(contextActions map[string][]press.KeyAction) *KeyBinder {
 	for contextId, actions := range contextActions {
 		for _, action := range actions {
 			b.AddAction(contextId, action)
@@ -55,31 +55,32 @@ func (b *KeyBinder) AddActions(contextActions map[string][]press.KeyAction) *Key
 	return b
 }
 
-func (r *KeyBinder) IsBound(contextId string, msg tea.Msg) bool {
+func (b *KeyBinder) IsBound(contextId string, msg tea.Msg) bool {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		_, ok := r.Get(contextId, msg.String())
+		_, ok := b.Get(contextId, msg.String())
 		return ok
 	default:
 		return false
 	}
 }
 
-func (r *KeyBinder) Get(contextId string, keyPress string) (func() tea.Cmd, bool) {
+func (b *KeyBinder) Get(contextId string, keyPress string) (press.KeyAction, bool) {
 	key := NewKeyContext(contextId, keyPress)
-	executeFunc, ok := r.bindings[key]
-	return executeFunc, ok
+	keyAction, ok := b.bindings[key]
+	return keyAction, ok
 }
 
-// TODO: fire once and remove vs permanent
-func (r *KeyBinder) Execute(contextId string, msg tea.Msg) tea.Cmd {
+func (b *KeyBinder) Execute(contextId string, msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		key := NewKeyContext(contextId, msg.String())
-		executeFunc, ok := r.bindings[key]
+		keyAction, ok := b.bindings[key]
 		if ok {
-			delete(r.bindings, key)
-			return executeFunc()
+			if !keyAction.Permanent {
+				b.Remove(key)
+			}
+			return keyAction.ActionFunc()
 		}
 	}
 	return nil
