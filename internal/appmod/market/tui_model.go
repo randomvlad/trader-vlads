@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
 	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	"github.com/randomvlad/trader-vlads/internal/util"
@@ -14,19 +15,24 @@ import (
 )
 
 type Model struct {
-	Market         *Market
-	playerService  PlayerService
-	toastMessenger ToastMessenger
-	Resources      map[string]int
-	state          marketModuleState
-	screenBuy      *BuyScreen
-	screenSell     *SellScreen
+	market          *Market
+	playerService   PlayerService
+	keyBinder       *keybind.KeyBinder
+	toastMessenger  ToastMessenger
+	Resources       map[string]int
+	state           marketModuleState
+	screenBuy       *BuyScreen
+	screenSell      *SellScreen
+	actionBuyStart  press.KeyAction
+	actionSellStart press.KeyAction
+	actionUnlock    press.KeyAction
 }
 
-func NewTuiModel(market *Market, player PlayerService, toast ToastMessenger) *Model {
+func NewTuiModel(market *Market, player PlayerService, keyBinder *keybind.KeyBinder, toast ToastMessenger) *Model {
 	return &Model{
-		Market:         market,
+		market:         market,
 		playerService:  player,
+		keyBinder:      keyBinder,
 		toastMessenger: toast,
 	}
 }
@@ -51,19 +57,64 @@ type ToastMessenger interface {
 }
 
 func (m *Model) Init() tea.Cmd {
+
+	// TODO issue: app state/location needs to account for buy/sell forms.
+	// Temp workaround: handle with if statement in each action func
+
+	m.actionBuyStart = press.NewActionBuilder().
+		Name("Buy").
+		ActionCmd(func() tea.Cmd {
+			if m.state != stateList {
+				return nil
+			}
+
+			m.state = stateBuy
+			return m.initBuyScreen()
+		}).
+		Permanent().
+		Build()
+
+	m.actionSellStart = press.NewActionBuilder().
+		Name("Sell").
+		ActionCmd(func() tea.Cmd {
+			if m.state != stateList {
+				return nil
+			}
+
+			if m.playerService.IsWarehouseEmpty() {
+				m.toastMessenger.Message("Warehouse is empty. Nothing to sell.")
+				return nil
+			} else {
+				m.state = stateSell
+				return m.initSellScreen()
+			}
+		}).
+		Permanent().
+		Build()
+
+	m.actionUnlock = press.NewActionBuilder().
+		Name("Unlock Resource").
+		Action(func() {
+			if m.state != stateList {
+				return
+			}
+
+			m.unlockItem()
+		}).
+		Permanent().
+		Build()
+
+	m.keyBinder.AddActions("tui-market", m.actionBuyStart, m.actionSellStart, m.actionUnlock)
+
 	return nil
 }
 
 func (m *Model) View() tea.View {
 
-	panel := tabs.NewTabPanel(
-		press.NewActionBuilder().Name("Buy").Build(),
-		press.NewActionBuilder().Name("Sell").Build(),
-		press.NewActionBuilder().Name("Unlock Resource").Build(),
-	)
+	panel := tabs.NewTabPanel(m.actionBuyStart, m.actionSellStart, m.actionUnlock)
 
 	panel.
-		WriteLn(viewMarket(m.Market)).
+		WriteLn(viewMarket(m.market)).
 		AddLn().
 		WriteLn(viewWarehouse(m.Resources))
 
@@ -92,25 +143,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		_, cmd := m.screenSell.Update(msg)
 		cmds = append(cmds, cmd)
 	case stateList:
-		switch msg := msg.(type) {
-		case tea.KeyPressMsg:
-			switch msg.String() {
-			case "b", "B":
-				m.state = stateBuy
-				cmd := m.initBuyScreen()
-				cmds = append(cmds, cmd)
-			case "s", "S":
-				if m.playerService.IsWarehouseEmpty() {
-					m.toastMessenger.Message("Warehouse is empty. Nothing to sell.")
-				} else {
-					m.state = stateSell
-					cmd := m.initSellScreen()
-					cmds = append(cmds, cmd)
-				}
-			case "u", "U":
-				m.unlockItem()
-			}
-		}
+
 	}
 
 	return m, tea.Batch(cmds...)
@@ -169,7 +202,7 @@ func viewWarehouse(resources map[string]int) string {
 }
 
 func (m *Model) initBuyScreen() tea.Cmd {
-	buyScreen := NewBuyScreen(m.Market.GetPricesCurrent(), m.playerService.GetMoney())
+	buyScreen := NewBuyScreen(m.market.GetPricesCurrent(), m.playerService.GetMoney())
 
 	buyScreen.OnAborted = func() {
 		m.state = stateList
@@ -183,7 +216,7 @@ func (m *Model) initBuyScreen() tea.Cmd {
 				continue
 			}
 
-			cost := m.Market.Resources[item].PriceCurrent * quantity
+			cost := m.market.Resources[item].PriceCurrent * quantity
 			m.playerService.AddMoney(-cost)
 			m.playerService.AddResourceQuantity(item, quantity)
 		}
@@ -195,7 +228,7 @@ func (m *Model) initBuyScreen() tea.Cmd {
 }
 
 func (m *Model) initSellScreen() tea.Cmd {
-	sellScreen := NewSellScreen(m.Resources, m.Market.GetPricesCurrent())
+	sellScreen := NewSellScreen(m.Resources, m.market.GetPricesCurrent())
 
 	sellScreen.OnAborted = func() {
 		m.state = stateList
@@ -209,7 +242,7 @@ func (m *Model) initSellScreen() tea.Cmd {
 				continue
 			}
 
-			cost := m.Market.Resources[item].PriceCurrent * quantity
+			cost := m.market.Resources[item].PriceCurrent * quantity
 			m.playerService.AddMoney(cost)
 			m.playerService.AddResourceQuantity(item, -quantity)
 		}
@@ -222,18 +255,18 @@ func (m *Model) initSellScreen() tea.Cmd {
 
 func (m *Model) unlockItem() {
 
-	if len(m.Market.LockedResources) == 0 {
+	if len(m.market.LockedResources) == 0 {
 		m.toastMessenger.Message("You have already unlocked all resources.")
 		return
 	}
 
-	if m.playerService.GetMoney() < m.Market.UnlockCost {
+	if m.playerService.GetMoney() < m.market.UnlockCost {
 		m.toastMessenger.Message("You don't have enough to unlock a new item. Stop being poor!")
 		return
 	}
 
-	m.playerService.AddMoney(-m.Market.UnlockCost)
-	unlockedItem := m.Market.UnlockResource()
+	m.playerService.AddMoney(-m.market.UnlockCost)
+	unlockedItem := m.market.UnlockResource()
 	if unlockedItem != nil {
 		m.playerService.AddResourceQuantity(unlockedItem.Name, 0)
 		m.toastMessenger.Message("New resource permit secured: %v", unlockedItem.Name)

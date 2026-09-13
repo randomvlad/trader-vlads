@@ -57,7 +57,7 @@ func NewGame() *GameData {
 		turnKeeper:   turnKeeper,
 		keyBinder:    keyBinder,
 		eqModel:      eq.NewTuiModel(player, keyBinder, toast),
-		marketModel:  appmarket.NewTuiModel(market, player, toast),
+		marketModel:  appmarket.NewTuiModel(market, player, keyBinder, toast),
 		statsModel:   appstats.NewTuiModel(player),
 		tabs:         tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
 		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone),
@@ -178,7 +178,12 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	} else {
 		switch TabId(gd.tabs.ActiveTab) {
 		case TabMarket:
-			_, cmd := gd.marketModel.Update(msg)
+			var cmd tea.Cmd
+			if gd.keyBinder.IsBound("tui-market", msg) {
+				cmd = gd.keyBinder.Execute("tui-market", msg)
+			} else {
+				_, cmd = gd.marketModel.Update(msg)
+			}
 			cmds = append(cmds, cmd)
 		case TabEquipment:
 			var cmd tea.Cmd
