@@ -56,7 +56,7 @@ func NewGame() *GameData {
 		player:       player,
 		turnKeeper:   turnKeeper,
 		keyBinder:    keyBinder,
-		eqModel:      eq.NewTuiModel(player, toast),
+		eqModel:      eq.NewTuiModel(player, keyBinder, toast),
 		marketModel:  appmarket.NewTuiModel(market, player, toast),
 		statsModel:   appstats.NewTuiModel(player),
 		tabs:         tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
@@ -67,14 +67,12 @@ func NewGame() *GameData {
 }
 
 func (gd *GameData) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
 	gd.bindActions()
 
+	cmdEq := gd.eqModel.Init()
 	cmdMarket := gd.marketModel.Init()
-	cmds = append(cmds, cmdMarket)
 
-	return tea.Batch(cmds...)
+	return tea.Batch(cmdEq, cmdMarket)
 }
 
 func (gd *GameData) bindActions() {
@@ -183,7 +181,12 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			_, cmd := gd.marketModel.Update(msg)
 			cmds = append(cmds, cmd)
 		case TabEquipment:
-			_, cmd := gd.eqModel.Update(msg)
+			var cmd tea.Cmd
+			if gd.keyBinder.IsBound("tui-eq", msg) {
+				cmd = gd.keyBinder.Execute("tui-eq", msg)
+			} else {
+				_, cmd = gd.eqModel.Update(msg)
+			}
 			cmds = append(cmds, cmd)
 		case TabStats:
 			_, cmd := gd.statsModel.Update(msg)

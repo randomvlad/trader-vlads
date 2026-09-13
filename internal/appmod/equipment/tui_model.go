@@ -5,6 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/randomvlad/trader-vlads/internal/appmod/keybind"
 	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
@@ -15,13 +16,18 @@ import (
 type Model struct {
 	selectionIndex int
 	player         PlayerService
+	keyBinder      *keybind.KeyBinder
 	toast          ToastMessenger
+	actionRemove   press.KeyAction
+	actionWear     press.KeyAction
+	actionUse      press.KeyAction
 }
 
-func NewTuiModel(player PlayerService, toast ToastMessenger) *Model {
+func NewTuiModel(player PlayerService, keyBinder *keybind.KeyBinder, toast ToastMessenger) *Model {
 	return &Model{
-		player: player,
-		toast:  toast,
+		player:    player,
+		keyBinder: keyBinder,
+		toast:     toast,
 	}
 }
 
@@ -42,6 +48,39 @@ type ToastMessenger interface {
 }
 
 func (m *Model) Init() tea.Cmd {
+
+	eqNext := press.NewActionBuilder().
+		NameKeyPress("EqNext", "down").
+		Action(func() { m.moveCursorPosition(true) }).
+		Permanent().
+		Build()
+
+	eqPrev := press.NewActionBuilder().
+		NameKeyPress("EqPrev", "up").
+		Action(func() { m.moveCursorPosition(false) }).
+		Permanent().
+		Build()
+
+	m.actionRemove = press.NewActionBuilder().
+		Name("Remove").
+		Action(func() { m.removeEq() }).
+		Permanent().
+		Build()
+
+	m.actionWear = press.NewActionBuilder().
+		Name("Wear").
+		Action(func() { m.wearEq() }).
+		Permanent().
+		Build()
+
+	m.actionUse = press.NewActionBuilder().
+		Name("Use").
+		Action(func() { m.useItem() }).
+		Permanent().
+		Build()
+
+	m.keyBinder.AddActions("tui-eq", eqNext, eqPrev, m.actionRemove, m.actionWear, m.actionUse)
+
 	return nil
 }
 
@@ -64,54 +103,7 @@ func (m *Model) View() tea.View {
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "down":
-			m.moveCursorPosition(true)
-		case "up":
-			m.moveCursorPosition(false)
-		case "r", "R":
-			invIndex := m.player.Remove(BodyPart(m.selectionIndex))
-			if invIndex >= 0 {
-				// move selection to the removed item in inventory
-				m.selectionIndex = invIndex + BodyPartsMax
-			}
-		case "w", "W":
-			invIndex := m.selectionIndex - BodyPartsMax
-			eqObject := m.player.GetInventoryObject(invIndex)
-			ok := m.player.WearInventory(invIndex)
-			if ok {
-				if len(eqObject.Effects) > 0 {
-					// TODO: this is a temp hack. need event pub/sub system. Player publishes event messages.
-					m.toast.Message(eqObject.Effects[0].GetMessageStart())
-				}
-
-				if m.selectionIndex >= BodyPartsMax+len(m.player.GetInventory()) {
-					m.selectionIndex -= 1 // inv has shrunk so move to previous item
-				}
-			}
-		case "u", "U":
-			invIndex := m.selectionIndex - BodyPartsMax
-			eqObject := m.player.GetInventoryObject(invIndex)
-			if eqObject != nil && eqObject.IsUsable() {
-				used := m.player.Use(invIndex)
-				if used {
-					if m.selectionIndex >= BodyPartsMax+len(m.player.GetInventory()) {
-						m.selectionIndex -= 1 // inv has shrunk so move to previous item
-					}
-
-					if len(eqObject.Effects) > 0 {
-						m.toast.Message(eqObject.Effects[0].GetMessageStart())
-					}
-				}
-			}
-		}
-	}
-
-	return m, tea.Batch(cmds...)
+	return m, nil
 }
 
 func (m *Model) moveCursorPosition(nextOrPrev bool) {
@@ -127,6 +119,47 @@ func (m *Model) moveCursorPosition(nextOrPrev bool) {
 		m.selectionIndex--
 		if m.selectionIndex < 0 {
 			m.selectionIndex = totalLength - 1 // wrap to end
+		}
+	}
+}
+
+func (m *Model) removeEq() {
+	invIndex := m.player.Remove(BodyPart(m.selectionIndex))
+	if invIndex >= 0 {
+		// move selection to the removed item in inventory
+		m.selectionIndex = invIndex + BodyPartsMax
+	}
+}
+
+func (m *Model) wearEq() {
+	invIndex := m.selectionIndex - BodyPartsMax
+	eqObject := m.player.GetInventoryObject(invIndex)
+	ok := m.player.WearInventory(invIndex)
+	if ok {
+		if len(eqObject.Effects) > 0 {
+			// TODO: this is a temp hack. need event pub/sub system. Player publishes event messages.
+			m.toast.Message(eqObject.Effects[0].GetMessageStart())
+		}
+
+		if m.selectionIndex >= BodyPartsMax+len(m.player.GetInventory()) {
+			m.selectionIndex -= 1 // inv has shrunk so move to previous item
+		}
+	}
+}
+
+func (m *Model) useItem() {
+	invIndex := m.selectionIndex - BodyPartsMax
+	eqObject := m.player.GetInventoryObject(invIndex)
+	if eqObject != nil && eqObject.IsUsable() {
+		used := m.player.Use(invIndex)
+		if used {
+			if m.selectionIndex >= BodyPartsMax+len(m.player.GetInventory()) {
+				m.selectionIndex -= 1 // inv has shrunk so move to previous item
+			}
+
+			if len(eqObject.Effects) > 0 {
+				m.toast.Message(eqObject.Effects[0].GetMessageStart())
+			}
 		}
 	}
 }
@@ -216,14 +249,14 @@ func (m *Model) getActions() []press.KeyAction {
 
 	if m.selectionIndex < BodyPartsMax {
 		if m.player.HasEquipped(BodyPart(m.selectionIndex)) {
-			actions = append(actions, press.NewActionBuilder().Name("Remove").Build())
+			actions = append(actions, m.actionRemove)
 		}
 	} else {
 		invObject := m.getSelectedObject()
 		if invObject.IsWearable() {
-			actions = append(actions, press.NewActionBuilder().Name("Wear").Build())
+			actions = append(actions, m.actionWear)
 		} else if invObject.IsUsable() {
-			actions = append(actions, press.NewActionBuilder().Name("Use").Build())
+			actions = append(actions, m.actionUse)
 		}
 	}
 
