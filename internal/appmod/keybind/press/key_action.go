@@ -12,6 +12,54 @@ type KeyAction struct {
 	Permanent  bool
 }
 
+type KeyActionBuilder struct {
+	name       string
+	keyPress   string
+	actionFunc func() tea.Cmd
+	permanent  bool
+}
+
+func NewActionBuilder() *KeyActionBuilder {
+	return &KeyActionBuilder{}
+}
+
+func (b *KeyActionBuilder) Name(name string) *KeyActionBuilder {
+	return b.NameKeyPress(name, stringutil.FirstCharLowercase(name))
+}
+
+func (b *KeyActionBuilder) NameKeyPress(name string, keyPress string) *KeyActionBuilder {
+	b.name = name
+	b.keyPress = keyPress
+	return b
+}
+
+func (b *KeyActionBuilder) Permanent() *KeyActionBuilder {
+	b.permanent = true
+	return b
+}
+
+func (b *KeyActionBuilder) ActionCmd(funcCmd func() tea.Cmd) *KeyActionBuilder {
+	b.actionFunc = funcCmd
+	return b
+}
+
+func (b *KeyActionBuilder) Action(funcNoCmd func()) *KeyActionBuilder {
+	b.actionFunc = func() tea.Cmd {
+		funcNoCmd()
+		return nil
+	}
+	return b
+}
+
+func (b *KeyActionBuilder) Build() KeyAction {
+	return KeyAction{
+		Name:       b.name,
+		KeyPress:   b.keyPress,
+		ActionFunc: b.actionFunc,
+		Permanent:  b.permanent,
+	}
+}
+
 func NewKeyAction(name string, actionFunc func()) KeyAction {
 	return KeyAction{
 		Name:     name,
@@ -22,48 +70,4 @@ func NewKeyAction(name string, actionFunc func()) KeyAction {
 		},
 		Permanent: false,
 	}
-}
-
-func NewAction(name string) *KeyAction {
-	return &KeyAction{
-		Name:     name,
-		KeyPress: stringutil.FirstCharLowercase(name),
-	}
-}
-
-func NewKeyActionPermanent(name string, actionFunc func() tea.Cmd) KeyAction {
-	return KeyAction{
-		Name:       name,
-		KeyPress:   stringutil.FirstCharLowercase(name),
-		ActionFunc: actionFunc,
-		Permanent:  true,
-	}
-}
-
-// TODO: temp while coding is being migrated and refactored
-func NewKeyActionNoOp(name string) KeyAction {
-	return NewKeyAction(name, func() {})
-}
-
-func (k *KeyAction) WithKeyPress(keyPress string) *KeyAction {
-	k.KeyPress = keyPress
-	return k
-}
-
-func (k *KeyAction) WithPermanent(permanent bool) *KeyAction {
-	k.Permanent = permanent
-	return k
-}
-
-func (k *KeyAction) WithFuncCmd(funcCmd func() tea.Cmd) *KeyAction {
-	k.ActionFunc = funcCmd
-	return k
-}
-
-func (k *KeyAction) WithFunc(actionFunc func()) *KeyAction {
-	k.ActionFunc = func() tea.Cmd {
-		actionFunc()
-		return nil
-	}
-	return k
 }

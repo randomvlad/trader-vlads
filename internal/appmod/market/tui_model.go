@@ -57,9 +57,9 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) View() tea.View {
 
 	panel := tabs.NewTabPanel(
-		press.NewKeyActionNoOp("Buy"),
-		press.NewKeyActionNoOp("Sell"),
-		press.NewKeyActionNoOp("Unlock Resource"),
+		press.NewActionBuilder().Name("Buy").Build(),
+		press.NewActionBuilder().Name("Sell").Build(),
+		press.NewActionBuilder().Name("Unlock Resource").Build(),
 	)
 
 	panel.

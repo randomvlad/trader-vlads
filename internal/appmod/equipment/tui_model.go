@@ -216,14 +216,14 @@ func (m *Model) getActions() []press.KeyAction {
 
 	if m.selectionIndex < BodyPartsMax {
 		if m.player.HasEquipped(BodyPart(m.selectionIndex)) {
-			actions = append(actions, press.NewKeyActionNoOp("Remove"))
+			actions = append(actions, press.NewActionBuilder().Name("Remove").Build())
 		}
 	} else {
 		invObject := m.getSelectedObject()
 		if invObject.IsWearable() {
-			actions = append(actions, press.NewKeyActionNoOp("Wear"))
+			actions = append(actions, press.NewActionBuilder().Name("Wear").Build())
 		} else if invObject.IsUsable() {
-			actions = append(actions, press.NewKeyActionNoOp("Use"))
+			actions = append(actions, press.NewActionBuilder().Name("Use").Build())
 		}
 	}
 

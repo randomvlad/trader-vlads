@@ -78,40 +78,42 @@ func (gd *GameData) Init() tea.Cmd {
 }
 
 func (gd *GameData) bindActions() {
-	actionNextWeek := press.NewKeyActionPermanent("Next Week", func() tea.Cmd {
-		gd.turnKeeper.Next()
-		return nil
-	})
 
-	actionQuit := press.NewKeyActionPermanent("Quit", func() tea.Cmd {
-		gd.toast.Message("Farewell and safe travels!")
-		return tea.Quit
-	})
+	nextWeek := press.NewActionBuilder().
+		Name("Next Week").
+		Action(func() { gd.turnKeeper.Next() }).
+		Permanent().
+		Build()
 
-	actionTabLeft := press.NewAction("NavTabLeft").
-		WithPermanent(true).
-		WithKeyPress("left").
-		WithFunc(func() {
-			gd.tabs.SelectLeft()
-		})
+	quit := press.NewActionBuilder().
+		Name("Quit").
+		ActionCmd(func() tea.Cmd {
+			gd.toast.Message("Farewell and safe travels!")
+			return tea.Quit
+		}).
+		Permanent().
+		Build()
 
-	actionTabRight := press.NewAction("NavTabRight").
-		WithPermanent(true).
-		WithKeyPress("right").
-		WithFunc(func() {
-			gd.tabs.SelectRight()
-		})
+	tabLeft := press.NewActionBuilder().
+		NameKeyPress("NavTabLeft", "left").
+		Action(func() { gd.tabs.SelectLeft() }).
+		Permanent().
+		Build()
 
-	clearToast := press.NewAction("ClearToast").
-		WithPermanent(true).
-		WithKeyPress("esc").
-		WithFunc(func() {
-			gd.toast.Clear()
-		})
+	tabRight := press.NewActionBuilder().
+		NameKeyPress("NavTabRight", "right").
+		Action(func() { gd.tabs.SelectRight() }).
+		Permanent().
+		Build()
 
-	gd.keyBinder.AddActions("global", *actionTabLeft, *actionTabRight, *clearToast, actionNextWeek, actionQuit)
+	clearToast := press.NewActionBuilder().
+		NameKeyPress("ClearToast", "esc").
+		Action(func() { gd.toast.Clear() }).
+		Permanent().
+		Build()
 
-	gd.actionFooter.SetActions(actionNextWeek, actionQuit)
+	gd.keyBinder.AddActions("global", tabLeft, tabRight, clearToast, nextWeek, quit)
+	gd.actionFooter.SetActions(nextWeek, quit)
 }
 
 func (gd *GameData) View() tea.View {
