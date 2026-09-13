@@ -94,7 +94,7 @@ func (p *Player) GetInventory() []*eq.EqObject {
 }
 
 func (p *Player) GetInventoryObject(index int) *eq.EqObject {
-	if index >= 0 || index < len(p.inventory) {
+	if index >= 0 && index < len(p.inventory) {
 		return p.inventory[index]
 	} else {
 		return nil
