@@ -6,10 +6,15 @@ import (
 )
 
 type eqObjectDef struct {
-	Name       string
-	Slot       EqSlot
-	Usable     bool
-	EffectDefs []eff.EffectInstanceCreator
+	Name          string
+	Slot          EqSlot
+	Usable        bool
+	EffectDefs    []eff.EffectInstanceCreator
+	StatDefense   *util.RangeInt
+	StatSpeed     *util.RangeInt
+	StatIntuition *util.RangeInt
+	StatWillpower *util.RangeInt
+	StatOpulence  *util.RangeInt
 }
 
 type EqSlot int
@@ -47,24 +52,33 @@ func NewEqDefRegistry() *EqDefRegistry {
 func getDefinitions() []*eqObjectDef {
 	return []*eqObjectDef{
 		{
-			Name: "copper ring of a novice",
-			Slot: EqSlotFinger,
+			Name:          "copper ring of a novice",
+			Slot:          EqSlotFinger,
+			StatIntuition: util.NewRangeInt(1, 1),
+			StatWillpower: util.NewRangeInt(1, 1),
+			StatOpulence:  util.NewRangeInt(-2, -2),
 		},
 		{
-			Name: "gray cotton tunic",
-			Slot: EqSlotTorso,
+			Name:        "gray cotton tunic",
+			Slot:        EqSlotTorso,
+			StatDefense: util.NewRangeInt(2, 2),
 		},
 		{
-			Name: "worn trousers",
-			Slot: EqSlotLegs,
+			Name:        "worn trousers",
+			Slot:        EqSlotLegs,
+			StatDefense: util.NewRangeInt(1, 1),
 		},
 		{
-			Name: "brown leather sandals",
-			Slot: EqSlotFeet,
+			Name:        "brown leather sandals",
+			Slot:        EqSlotFeet,
+			StatDefense: util.NewRangeInt(1, 1),
+			StatSpeed:   util.NewRangeInt(1, 1),
 		},
 		{
-			Name: "quill made from a talon of the Blue Dragon",
-			Slot: EqSlotHold,
+			Name:          "quill made from a talon of the Blue Dragon",
+			Slot:          EqSlotHold,
+			StatOpulence:  util.NewRangeInt(5, 7),
+			StatWillpower: util.NewRangeInt(1, 2),
 		},
 		{
 			Name:   "a potion of Beginner's Luck 🍀",

@@ -34,6 +34,26 @@ func (f *EqForge) Make(random *util.RandomGenerator, eqDefs ...string) []*EqObje
 			Usable: eqDef.Usable,
 		}
 
+		if eqDef.StatDefense != nil {
+			eqObject.Attributes = append(eqObject.Attributes, createStat(AttributeDefense, eqDef.StatDefense, random))
+		}
+
+		if eqDef.StatSpeed != nil {
+			eqObject.Attributes = append(eqObject.Attributes, createStat(AttributeSpeed, eqDef.StatSpeed, random))
+		}
+
+		if eqDef.StatIntuition != nil {
+			eqObject.Attributes = append(eqObject.Attributes, createStat(AttributeIntuition, eqDef.StatIntuition, random))
+		}
+
+		if eqDef.StatWillpower != nil {
+			eqObject.Attributes = append(eqObject.Attributes, createStat(AttributeWillpower, eqDef.StatWillpower, random))
+		}
+
+		if eqDef.StatOpulence != nil {
+			eqObject.Attributes = append(eqObject.Attributes, createStat(AttributeOpulence, eqDef.StatOpulence, random))
+		}
+
 		for _, effectDef := range eqDef.EffectDefs {
 			effect := effectDef.Create(random, eqObject.Id, "equipment")
 			eqObject.Effects = append(eqObject.Effects, effect)
@@ -43,4 +63,11 @@ func (f *EqForge) Make(random *util.RandomGenerator, eqDefs ...string) []*EqObje
 	}
 
 	return objects
+}
+
+func createStat(attributeType AttributeType, valueRange *util.RangeInt, random *util.RandomGenerator) StatAttribute {
+	return StatAttribute{
+		AttributeType: attributeType,
+		Value:         valueRange.Generate(random),
+	}
 }

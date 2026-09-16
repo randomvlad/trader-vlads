@@ -78,7 +78,7 @@ func (gd *GameData) Init() tea.Cmd {
 func (gd *GameData) bindActions() {
 
 	nextWeek := press.NewActionBuilder().
-		Name("Next Week").
+		Name("End Turn").
 		Action(func() { gd.turnKeeper.Next() }).
 		Permanent().
 		Build()
@@ -110,39 +110,12 @@ func (gd *GameData) bindActions() {
 		Permanent().
 		Build()
 
-	gd.keyBinder.AddActions("global", tabLeft, tabRight, clearToast, nextWeek, quit)
+	gd.keyBinder.AddActions("tui-control", tabLeft, tabRight, clearToast, nextWeek, quit)
 	gd.actionFooter.SetActions(nextWeek, quit)
 }
 
 func (gd *GameData) View() tea.View {
 	var view stringutil.Builder
-
-	// status bar
-	view.Write(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
-
-	// tabs and tab content
-	view.WriteLn(gd.tabs.View())
-
-	activeTab := TabId(gd.tabs.ActiveTab)
-	switch activeTab {
-	case TabEvents:
-		panel := tabs.NewTabPanel().WriteLn("Events History")
-		view.WriteLn(panel.Render())
-	case TabMarket:
-		gd.marketModel.Resources = gd.player.Warehouse.Resources
-		view.WriteLn(gd.marketModel.View().Content)
-	case TabEquipment:
-		view.WriteLn(gd.eqModel.View().Content)
-	case TabStats:
-		view.WriteLn(gd.statsModel.View().Content)
-	}
-
-	// footer
-	view.Write(gd.actionFooter.Render())
-
-	layerMain := lipgloss.NewLayer(view.String())
-
-	compositor := lipgloss.NewCompositor(layerMain)
 
 	activeStory := gd.turnKeeper.EventTracker.GetActiveStory()
 	if activeStory != nil {
@@ -150,10 +123,35 @@ func (gd *GameData) View() tea.View {
 			WithTitle(activeStory.GetName()).
 			WithFooter(activeStory.GetCurrentActions()...).
 			Write(activeStory.View())
+		view.Write(panel.Render())
+	} else {
+		// status bar
+		view.Write(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
 
-		layerPopup := lipgloss.NewLayer(panel.Render()).X(20).Y(9).Z(1)
-		compositor.AddLayers(layerPopup)
+		// tabs and tab content
+		view.WriteLn(gd.tabs.View())
+
+		activeTab := TabId(gd.tabs.ActiveTab)
+		switch activeTab {
+		case TabEvents:
+			panel := tabs.NewTabPanel().WriteLn("Events History")
+			view.WriteLn(panel.Render())
+		case TabMarket:
+			gd.marketModel.Resources = gd.player.Warehouse.Resources
+			view.WriteLn(gd.marketModel.View().Content)
+		case TabEquipment:
+			view.WriteLn(gd.eqModel.View().Content)
+		case TabStats:
+			view.WriteLn(gd.statsModel.View().Content)
+		}
+
+		// footer
+		view.Write(gd.actionFooter.Render())
 	}
+
+	layerMain := lipgloss.NewLayer(view.String())
+
+	compositor := lipgloss.NewCompositor(layerMain)
 
 	if gd.toast.Show {
 		layerToast := lipgloss.NewLayer(gd.toast.Render()).X(25).Y(8).Z(2)
@@ -167,14 +165,14 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 
-	if gd.keyBinder.IsBound("global", msg) {
-		cmd := gd.keyBinder.Execute("global", msg)
-		cmds = append(cmds, cmd)
-	} else if story := gd.turnKeeper.EventTracker.GetActiveStory(); story != nil {
+	if story := gd.turnKeeper.EventTracker.GetActiveStory(); story != nil {
 		if gd.keyBinder.IsBound(story.GetStateId(), msg) {
 			cmd := gd.keyBinder.Execute(story.GetStateId(), msg)
 			cmds = append(cmds, cmd)
 		}
+	} else if gd.keyBinder.IsBound("tui-control", msg) {
+		cmd := gd.keyBinder.Execute("tui-control", msg)
+		cmds = append(cmds, cmd)
 	} else {
 		switch TabId(gd.tabs.ActiveTab) {
 		case TabMarket:

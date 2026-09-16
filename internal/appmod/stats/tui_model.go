@@ -2,9 +2,11 @@ package stats
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/randomvlad/trader-vlads/internal/appmod/player"
 	eff "github.com/randomvlad/trader-vlads/internal/appmod/stats/statuseffect"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 )
@@ -21,6 +23,7 @@ func NewTuiModel(player PlayerStatsService) *Model {
 
 type PlayerStatsService interface {
 	GetEffects() []eff.StatusEffect
+	GetStats() player.Stats
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -30,6 +33,16 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) View() tea.View {
 
 	panel := tabs.NewTabPanel()
+
+	stats := m.player.GetStats()
+	panel.WriteLn("Character:").
+		WriteLn("    Defense: " + strconv.Itoa(stats.Defense)).
+		WriteLn("    Speed: " + strconv.Itoa(stats.Speed)).
+		WriteLn("    Intuition: " + strconv.Itoa(stats.Intuition)).
+		WriteLn("    Willpower: " + strconv.Itoa(stats.Willpower)).
+		WriteLn("    Opulence: " + strconv.Itoa(stats.Opulence)).
+		AddLn()
+
 	panel.WriteLn("You are affected by:")
 
 	effects := m.player.GetEffects()

@@ -19,6 +19,14 @@ type Player struct {
 	random    *util.RandomGenerator
 }
 
+type Stats struct {
+	Defense   int
+	Speed     int
+	Intuition int
+	Willpower int
+	Opulence  int
+}
+
 func NewPlayer(m *market.Market, r *util.RandomGenerator) *Player {
 
 	warehouse := &Warehouse{
@@ -233,4 +241,32 @@ func (p *Player) RemoveEffects(ids ...ulid.ULID) {
 
 func (p *Player) destroy(invIndex int) {
 	p.inventory = slices.Delete(p.inventory, invIndex, invIndex+1)
+}
+
+func (p *Player) GetStats() Stats {
+
+	stats := Stats{}
+
+	for _, eqObject := range p.equipped {
+		if eqObject == nil {
+			continue
+		}
+
+		for _, attribute := range eqObject.Attributes {
+			switch attribute.AttributeType {
+			case eq.AttributeDefense:
+				stats.Defense += attribute.Value
+			case eq.AttributeSpeed:
+				stats.Speed += attribute.Value
+			case eq.AttributeIntuition:
+				stats.Intuition += attribute.Value
+			case eq.AttributeWillpower:
+				stats.Willpower += attribute.Value
+			case eq.AttributeOpulence:
+				stats.Opulence += attribute.Value
+			}
+		}
+	}
+
+	return stats
 }
