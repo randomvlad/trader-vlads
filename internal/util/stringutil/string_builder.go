@@ -65,6 +65,10 @@ func (b *Builder) Len() int {
 	return b.sb.Len()
 }
 
+func (b *Builder) Width() int {
+	return lipgloss.Width(b.String())
+}
+
 func (b *Builder) String() string {
 	return b.sb.String()
 }

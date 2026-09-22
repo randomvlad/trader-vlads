@@ -7,10 +7,10 @@ import (
 	"github.com/randomvlad/trader-vlads/internal/util"
 )
 
-// TODO: requires more thought and structure how to centralize and manage app wide styles
 var (
 	AppWidth       = 120
-	TabHeight      = 30
+	AppHeight      = 40
+	TabHeight      = 32
 	AppBorderColor = compat.AdaptiveColor{
 		Light: lipgloss.Color("#04B575"),
 		Dark:  lipgloss.Color("#04B575"),
@@ -25,7 +25,17 @@ var (
 		Dark:  lipgloss.BrightWhite,
 	}
 
+	greenBlendColors = util.ToColors("#8BF578", "#6CCB5B", "#55A147", "#407C35", "#55A147", "#6CCB5B", "#8BF578")
+
 	StyleAppContainer = NewAppStyle()
+
+	StyleStoryContainer = NewAppStyle().
+				Width(AppWidth).
+				Height(AppHeight).
+				BorderStyle(lipgloss.RoundedBorder()).
+				BorderForegroundBlend(greenBlendColors...).
+				AlignHorizontal(lipgloss.Center).
+				AlignVertical(lipgloss.Center)
 
 	PopupWidth = 70
 	StylePopup = NewAppStyle().
@@ -39,24 +49,18 @@ var (
 			charmtone.Charple,
 			charmtone.Sriracha)
 
-	StyleBadge = NewAppStyle().
-			Padding(0, 2).
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(AppBorderColor)
-
-	blendColors = util.ToColors("#8BF578", "#6CCB5B", "#55A147", "#407C35", "#55A147", "#6CCB5B", "#8BF578")
-	StyleToast  = NewAppStyle().
+	StyleToast = NewAppStyle().
 			Width(50).
 			Padding(2, 3).
 			Align(lipgloss.Center).
 			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForegroundBlend(blendColors...)
+			BorderForegroundBlend(greenBlendColors...)
 
 	StyleEqStats = NewAppStyle().
 			Width(50).
 			Padding(0, 1).
 			Border(lipgloss.NormalBorder()).
-			BorderForegroundBlend(blendColors...)
+			BorderForegroundBlend(greenBlendColors...)
 )
 
 func NewAppStyle() lipgloss.Style {

@@ -15,17 +15,14 @@ import (
 )
 
 type Model struct {
-	market          *Market
-	playerService   PlayerService
-	keyBinder       *keybind.KeyBinder
-	toastMessenger  ToastMessenger
-	Resources       map[string]int
-	state           marketModuleState
-	screenBuy       *BuyScreen
-	screenSell      *SellScreen
-	actionBuyStart  press.KeyAction
-	actionSellStart press.KeyAction
-	actionUnlock    press.KeyAction
+	market         *Market
+	playerService  PlayerService
+	keyBinder      *keybind.KeyBinder
+	toastMessenger ToastMessenger
+	Resources      map[string]int
+	state          marketModuleState
+	screenBuy      *BuyScreen
+	screenSell     *SellScreen
 }
 
 func NewTuiModel(market *Market, player PlayerService, keyBinder *keybind.KeyBinder, toast ToastMessenger) *Model {
@@ -61,7 +58,7 @@ func (m *Model) Init() tea.Cmd {
 	// TODO issue: app state/location needs to account for buy/sell forms.
 	// Temp workaround: handle with if statement in each action func
 
-	m.actionBuyStart = press.NewActionBuilder().
+	actionBuyStart := press.NewActionBuilder().
 		Name("Buy").
 		ActionCmd(func() tea.Cmd {
 			if m.state != stateList {
@@ -72,9 +69,10 @@ func (m *Model) Init() tea.Cmd {
 			return m.initBuyScreen()
 		}).
 		Permanent().
+		SortOrder(1).
 		Build()
 
-	m.actionSellStart = press.NewActionBuilder().
+	actionSellStart := press.NewActionBuilder().
 		Name("Sell").
 		ActionCmd(func() tea.Cmd {
 			if m.state != stateList {
@@ -90,9 +88,10 @@ func (m *Model) Init() tea.Cmd {
 			}
 		}).
 		Permanent().
+		SortOrder(2).
 		Build()
 
-	m.actionUnlock = press.NewActionBuilder().
+	actionUnlock := press.NewActionBuilder().
 		Name("Unlock Resource").
 		Action(func() {
 			if m.state != stateList {
@@ -102,18 +101,18 @@ func (m *Model) Init() tea.Cmd {
 			m.unlockItem()
 		}).
 		Permanent().
+		SortOrder(3).
 		Build()
 
-	m.keyBinder.AddActions("tui-market", m.actionBuyStart, m.actionSellStart, m.actionUnlock)
+	m.keyBinder.AddActions("tui-market", actionBuyStart, actionSellStart, actionUnlock)
 
 	return nil
 }
 
 func (m *Model) View() tea.View {
 
-	panel := tabs.NewTabPanel(m.actionBuyStart, m.actionSellStart, m.actionUnlock)
-
-	panel.
+	panel := tabs.NewTabPanel().
+		WithBodyBorderFooterCompatible().
 		WriteLn(viewMarket(m.market)).
 		AddLn().
 		WriteLn(viewWarehouse(m.Resources))

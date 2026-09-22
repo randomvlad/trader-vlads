@@ -1,6 +1,8 @@
 package keybind
 
 import (
+	"cmp"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -69,6 +71,26 @@ func (b *KeyBinder) Get(contextId string, keyPress string) (press.KeyAction, boo
 	key := NewKeyContext(contextId, keyPress)
 	keyAction, ok := b.bindings[key]
 	return keyAction, ok
+}
+
+func (b *KeyBinder) GetFooterVisible(contextId string) []press.KeyAction {
+	var contextActions []press.KeyAction
+	for key, action := range b.bindings {
+		if key.ContextId == contextId && action.FooterVisible {
+			contextActions = append(contextActions, action)
+		}
+	}
+
+	slices.SortFunc(contextActions, func(a, b press.KeyAction) int {
+		orderDiff := cmp.Compare(a.SortOrder, b.SortOrder)
+		if orderDiff == 0 {
+			return cmp.Compare(a.Name, b.Name)
+		} else {
+			return orderDiff
+		}
+	})
+
+	return contextActions
 }
 
 func (b *KeyBinder) Execute(contextId string, msg tea.Msg) tea.Cmd {

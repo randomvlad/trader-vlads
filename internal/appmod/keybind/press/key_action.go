@@ -6,21 +6,25 @@ import (
 )
 
 type KeyAction struct {
-	Name       string
-	KeyPress   string
-	ActionFunc func() tea.Cmd
-	Permanent  bool
+	Name          string
+	KeyPress      string
+	ActionFunc    func() tea.Cmd
+	Permanent     bool
+	FooterVisible bool
+	SortOrder     int
 }
 
 type KeyActionBuilder struct {
-	name       string
-	keyPress   string
-	actionFunc func() tea.Cmd
-	permanent  bool
+	name          string
+	keyPress      string
+	actionFunc    func() tea.Cmd
+	permanent     bool
+	footerVisible bool
+	sortOrder     int
 }
 
 func NewActionBuilder() *KeyActionBuilder {
-	return &KeyActionBuilder{}
+	return &KeyActionBuilder{footerVisible: true}
 }
 
 func (b *KeyActionBuilder) Name(name string) *KeyActionBuilder {
@@ -35,6 +39,16 @@ func (b *KeyActionBuilder) NameKeyPress(name string, keyPress string) *KeyAction
 
 func (b *KeyActionBuilder) Permanent() *KeyActionBuilder {
 	b.permanent = true
+	return b
+}
+
+func (b *KeyActionBuilder) FooterHidden() *KeyActionBuilder {
+	b.footerVisible = false
+	return b
+}
+
+func (b *KeyActionBuilder) SortOrder(sortOrder int) *KeyActionBuilder {
+	b.sortOrder = sortOrder
 	return b
 }
 
@@ -53,21 +67,11 @@ func (b *KeyActionBuilder) Action(funcNoCmd func()) *KeyActionBuilder {
 
 func (b *KeyActionBuilder) Build() KeyAction {
 	return KeyAction{
-		Name:       b.name,
-		KeyPress:   b.keyPress,
-		ActionFunc: b.actionFunc,
-		Permanent:  b.permanent,
-	}
-}
-
-func NewKeyAction(name string, actionFunc func()) KeyAction {
-	return KeyAction{
-		Name:     name,
-		KeyPress: stringutil.FirstCharLowercase(name),
-		ActionFunc: func() tea.Cmd {
-			actionFunc()
-			return nil
-		},
-		Permanent: false,
+		Name:          b.name,
+		KeyPress:      b.keyPress,
+		ActionFunc:    b.actionFunc,
+		Permanent:     b.permanent,
+		FooterVisible: b.footerVisible,
+		SortOrder:     b.sortOrder,
 	}
 }

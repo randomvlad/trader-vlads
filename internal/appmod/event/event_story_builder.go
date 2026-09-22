@@ -29,7 +29,7 @@ func (b *StorySceneBuilder) ViewStatic(staticContent string) *StorySceneBuilder 
 }
 
 func (b *StorySceneBuilder) AddAction(name string, executeFunc func()) *StorySceneBuilder {
-	b.actions = append(b.actions, press.NewKeyAction(name, executeFunc))
+	b.actions = append(b.actions, press.NewActionBuilder().Name(name).Action(executeFunc).Build())
 	return b
 }
 

@@ -18,9 +18,10 @@ type Model struct {
 }
 
 type modelVisual struct {
-	width     int
-	height    int
-	styleBody lipgloss.Style
+	width                      int
+	height                     int
+	bodyBorderFooterCompatible bool
+	styleBody                  lipgloss.Style
 }
 
 func NewModel() *Model {
@@ -60,6 +61,11 @@ func (p *Model) WithStyle(styleBody lipgloss.Style) *Model {
 
 func (p *Model) WithFooter(actions ...press.KeyAction) *Model {
 	p.footer = actionfooter.NewModel(actionfooter.FooterPanel, actions...)
+	return p.WithBodyBorderFooterCompatible()
+}
+
+func (p *Model) WithBodyBorderFooterCompatible() *Model {
+	p.visual.bodyBorderFooterCompatible = true
 	return p
 }
 
@@ -113,7 +119,7 @@ func (p *Model) renderBodyWithFooter() string {
 
 	if p.footer != nil {
 		p.footer.WithWidth(p.visual.width)
-		render.Ln().WriteLn(p.footer.Render())
+		render.Ln().WriteLn(p.footer.Render("")) // TODO: action context
 	}
 
 	return render.String()
@@ -151,8 +157,10 @@ func (p *Model) getComputedBodyStyle() lipgloss.Style {
 	computed := p.visual.styleBody.Width(p.visual.width)
 	heightBody := p.visual.height
 
-	if p.footer != nil {
-		heightBody -= 2 // account for footer getting rendered separately
+	if p.visual.bodyBorderFooterCompatible {
+		if p.footer != nil {
+			heightBody -= 2 // reduce body height to make room for the footer
+		}
 
 		// Configure body border to seamlessly connect with footer border that follows
 		border, top, right, bottom, left := computed.GetBorder()

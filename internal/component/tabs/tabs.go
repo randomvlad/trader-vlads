@@ -61,11 +61,16 @@ func NewTabPanel(actions ...press.KeyAction) *apppanel.Model {
 		BorderTop(false). // top border is drawn by tabs view
 		BorderForeground(appstyle.AppBorderColor)
 
-	return apppanel.NewModel().
+	model := apppanel.NewModel().
 		WithStyle(styleTabBody).
 		WithWidth(appstyle.AppWidth).
-		WithHeight(appstyle.TabHeight).
-		WithFooter(actions...)
+		WithHeight(appstyle.TabHeight)
+
+	if len(actions) > 0 {
+		model.WithFooter(actions...)
+	}
+
+	return model
 }
 
 // TODO: []TabModel struct with fields: id, display, shortcut key?
@@ -87,7 +92,8 @@ func tabBorderWithBottom(left, middle, right string) lipgloss.Border {
 }
 
 func (m *Model) View() string {
-	var renderedTabs []string
+	renderedTabs := []string{getSpacerLeft()}
+
 	for tabIndex, tabName := range m.Tabs {
 		borderStyle := getTabStyle(tabIndex, m)
 		renderedTabs = append(renderedTabs, borderStyle.Render(tabName))
@@ -101,11 +107,24 @@ func (m *Model) View() string {
 		neededSpaceWidth := m.visual.width - widthSoFar - borderRightWidth
 
 		// Fill remaining space with a bordered spacer so the bottom line runs all the way to max tabs width
-		spaceFiller := getSpacerStyle().Render(strings.Repeat(" ", neededSpaceWidth))
+		spaceFiller := getSpacerRight(neededSpaceWidth)
+
 		viewContent = lipgloss.JoinHorizontal(lipgloss.Bottom, viewContent, spaceFiller)
 	}
 
 	return viewContent
+}
+
+func getSpacerLeft() string {
+	border := lipgloss.RoundedBorder()
+	border.BottomLeft = "├"
+	border.BottomRight = ""
+
+	style := lipgloss.NewStyle().
+		BorderForeground(appstyle.AppBorderColor).
+		Border(border, false, false, true, true)
+
+	return style.Render("   \n ")
 }
 
 func getTabStyle(tabIndex int, m *Model) lipgloss.Style {
@@ -124,9 +143,9 @@ func getTabStyle(tabIndex int, m *Model) lipgloss.Style {
 	if isFirst {
 		var left string
 		if isActive {
-			left = "│"
+			left = "┘"
 		} else {
-			left = "├"
+			left = "┴"
 		}
 		border.BottomLeft = left
 	} else if isLast {
@@ -142,14 +161,19 @@ func getTabStyle(tabIndex int, m *Model) lipgloss.Style {
 	return style.Border(border)
 }
 
-func getSpacerStyle() lipgloss.Style {
+func getSpacerRight(width int) string {
+	spaceContent := strings.Repeat(" ", width) + "\n " // trailing newline & space to fill vertical space
+
 	borderSpacer := lipgloss.RoundedBorder()
-	borderSpacer.Right = ""
+	borderSpacer.Right = "│"
 	borderSpacer.BottomLeft = ""
 	borderSpacer.Bottom = "─"
-	borderSpacer.BottomRight = "╮" // rounded down to connect with "│" border of tab's content view
+	borderSpacer.BottomRight = "┤" // to connect with "│" border of tab's content view
 
-	return lipgloss.NewStyle().
+	style := lipgloss.NewStyle().
 		Border(borderSpacer, false, true, true, false).
 		BorderForeground(appstyle.AppBorderColor)
+
+	// Fill remaining space with a bordered spacer so the bottom line runs all the way to max tabs width
+	return style.Render(spaceContent)
 }

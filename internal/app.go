@@ -53,16 +53,18 @@ func NewGame() *GameData {
 	turnKeeper := ev.NewTurnKeeper(player, market, keyBinder, random, toast)
 
 	return &GameData{
-		player:       player,
-		turnKeeper:   turnKeeper,
-		keyBinder:    keyBinder,
-		eqModel:      eq.NewTuiModel(player, keyBinder, toast),
-		marketModel:  appmarket.NewTuiModel(market, player, keyBinder, toast),
-		statsModel:   appstats.NewTuiModel(player),
-		tabs:         tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
-		actionFooter: actionfooter.NewModel(actionfooter.FooterStandalone),
-		toast:        toast,
-		status:       status.New(),
+		player:      player,
+		turnKeeper:  turnKeeper,
+		keyBinder:   keyBinder,
+		eqModel:     eq.NewTuiModel(player, keyBinder, toast),
+		marketModel: appmarket.NewTuiModel(market, player, keyBinder, toast),
+		statsModel:  appstats.NewTuiModel(player),
+		tabs:        tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
+		actionFooter: actionfooter.NewModel(actionfooter.FooterPanel).
+			WithKeyBinder(keyBinder).
+			WithDisplayRightActionContext("tui-control"),
+		toast:  toast,
+		status: status.New(),
 	}
 }
 
@@ -81,6 +83,7 @@ func (gd *GameData) bindActions() {
 		Name("End Turn").
 		Action(func() { gd.turnKeeper.Next() }).
 		Permanent().
+		SortOrder(1).
 		Build()
 
 	quit := press.NewActionBuilder().
@@ -90,55 +93,62 @@ func (gd *GameData) bindActions() {
 			return tea.Quit
 		}).
 		Permanent().
+		SortOrder(2).
 		Build()
 
 	tabLeft := press.NewActionBuilder().
 		NameKeyPress("NavTabLeft", "left").
 		Action(func() { gd.tabs.SelectLeft() }).
 		Permanent().
+		FooterHidden().
 		Build()
 
 	tabRight := press.NewActionBuilder().
 		NameKeyPress("NavTabRight", "right").
 		Action(func() { gd.tabs.SelectRight() }).
 		Permanent().
+		FooterHidden().
 		Build()
 
 	clearToast := press.NewActionBuilder().
 		NameKeyPress("ClearToast", "esc").
 		Action(func() { gd.toast.Clear() }).
+		FooterHidden().
 		Permanent().
 		Build()
 
 	gd.keyBinder.AddActions("tui-control", tabLeft, tabRight, clearToast, nextWeek, quit)
-	gd.actionFooter.SetActions(nextWeek, quit)
 }
 
 func (gd *GameData) View() tea.View {
 	var view stringutil.Builder
 
-	activeStory := gd.turnKeeper.EventTracker.GetActiveStory()
-	if activeStory != nil {
+	if activeStory := gd.turnKeeper.EventTracker.GetActiveStory(); activeStory != nil {
 		panel := apppanel.NewModel().
 			WithTitle(activeStory.GetName()).
 			WithFooter(activeStory.GetCurrentActions()...).
 			Write(activeStory.View())
-		view.Write(panel.Render())
+		view.WriteStyle(panel.Render(), appstyle.StyleStoryContainer)
+
 	} else {
 		// status bar
-		view.Write(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
+		view.WriteLn(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
 
 		// tabs and tab content
 		view.WriteLn(gd.tabs.View())
 
+		var actionsContext string
 		activeTab := TabId(gd.tabs.ActiveTab)
 		switch activeTab {
 		case TabEvents:
-			panel := tabs.NewTabPanel().WriteLn("Events History")
+			panel := tabs.NewTabPanel().
+				WithBodyBorderFooterCompatible().
+				WriteLn("Events History")
 			view.WriteLn(panel.Render())
 		case TabMarket:
 			gd.marketModel.Resources = gd.player.Warehouse.Resources
 			view.WriteLn(gd.marketModel.View().Content)
+			actionsContext = "tui-market"
 		case TabEquipment:
 			view.WriteLn(gd.eqModel.View().Content)
 		case TabStats:
@@ -146,7 +156,7 @@ func (gd *GameData) View() tea.View {
 		}
 
 		// footer
-		view.Write(gd.actionFooter.Render())
+		view.Write(gd.actionFooter.Render(actionsContext))
 	}
 
 	layerMain := lipgloss.NewLayer(view.String())
