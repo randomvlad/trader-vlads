@@ -6,25 +6,25 @@ import (
 )
 
 type KeyAction struct {
-	Name          string
-	KeyPress      string
-	ActionFunc    func() tea.Cmd
-	Permanent     bool
-	FooterVisible bool
-	SortOrder     int
+	Name            string
+	KeyPress        string
+	ActionFunc      func() tea.Cmd
+	Permanent       bool
+	SortOrder       int
+	IsFooterVisible func() bool
 }
 
 type KeyActionBuilder struct {
-	name          string
-	keyPress      string
-	actionFunc    func() tea.Cmd
-	permanent     bool
-	footerVisible bool
-	sortOrder     int
+	name              string
+	keyPress          string
+	actionFunc        func() tea.Cmd
+	permanent         bool
+	sortOrder         int
+	footerVisibleFunc func() bool
 }
 
 func NewActionBuilder() *KeyActionBuilder {
-	return &KeyActionBuilder{footerVisible: true}
+	return &KeyActionBuilder{}
 }
 
 func (b *KeyActionBuilder) Name(name string) *KeyActionBuilder {
@@ -43,7 +43,13 @@ func (b *KeyActionBuilder) Permanent() *KeyActionBuilder {
 }
 
 func (b *KeyActionBuilder) FooterHidden() *KeyActionBuilder {
-	b.footerVisible = false
+	return b.FooterVisible(func() bool {
+		return false
+	})
+}
+
+func (b *KeyActionBuilder) FooterVisible(visible func() bool) *KeyActionBuilder {
+	b.footerVisibleFunc = visible
 	return b
 }
 
@@ -66,12 +72,18 @@ func (b *KeyActionBuilder) Action(funcNoCmd func()) *KeyActionBuilder {
 }
 
 func (b *KeyActionBuilder) Build() KeyAction {
+	if b.footerVisibleFunc == nil {
+		b.footerVisibleFunc = func() bool {
+			return true
+		}
+	}
+
 	return KeyAction{
-		Name:          b.name,
-		KeyPress:      b.keyPress,
-		ActionFunc:    b.actionFunc,
-		Permanent:     b.permanent,
-		FooterVisible: b.footerVisible,
-		SortOrder:     b.sortOrder,
+		Name:            b.name,
+		KeyPress:        b.keyPress,
+		ActionFunc:      b.actionFunc,
+		Permanent:       b.permanent,
+		SortOrder:       b.sortOrder,
+		IsFooterVisible: b.footerVisibleFunc,
 	}
 }

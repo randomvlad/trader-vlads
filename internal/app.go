@@ -151,8 +151,10 @@ func (gd *GameData) View() tea.View {
 			actionsContext = "tui-market"
 		case TabEquipment:
 			view.WriteLn(gd.eqModel.View().Content)
+			actionsContext = "tui-eq"
 		case TabStats:
 			view.WriteLn(gd.statsModel.View().Content)
+			actionsContext = "tui-stats"
 		}
 
 		// footer

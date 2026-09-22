@@ -53,29 +53,40 @@ func (m *Model) Init() tea.Cmd {
 		NameKeyPress("EqNext", "down").
 		Action(func() { m.moveCursorPosition(true) }).
 		Permanent().
+		FooterHidden().
 		Build()
 
 	eqPrev := press.NewActionBuilder().
 		NameKeyPress("EqPrev", "up").
 		Action(func() { m.moveCursorPosition(false) }).
+		FooterHidden().
 		Permanent().
 		Build()
 
 	m.actionRemove = press.NewActionBuilder().
 		Name("Remove").
 		Action(func() { m.removeEq() }).
+		FooterVisible(func() bool {
+			return m.isSelectedBodyPart() && m.player.HasEquipped(BodyPart(m.selectionIndex))
+		}).
 		Permanent().
 		Build()
 
 	m.actionWear = press.NewActionBuilder().
 		Name("Wear").
 		Action(func() { m.wearEq() }).
+		FooterVisible(func() bool {
+			return !m.isSelectedBodyPart() && m.getSelectedObject().IsWearable()
+		}).
 		Permanent().
 		Build()
 
 	m.actionUse = press.NewActionBuilder().
 		Name("Use").
 		Action(func() { m.useItem() }).
+		FooterVisible(func() bool {
+			return !m.isSelectedBodyPart() && m.getSelectedObject().IsUsable()
+		}).
 		Permanent().
 		Build()
 
@@ -86,7 +97,7 @@ func (m *Model) Init() tea.Cmd {
 
 func (m *Model) View() tea.View {
 
-	panel := tabs.NewTabPanel(m.getActions()...)
+	panel := tabs.NewTabPanel().WithBodyBorderFooterCompatible()
 
 	panel.
 		WriteLn(m.renderEq()).
@@ -247,7 +258,7 @@ func (m *Model) renderInv() string {
 func (m *Model) getActions() []press.KeyAction {
 	var actions []press.KeyAction
 
-	if m.selectionIndex < BodyPartsMax {
+	if m.isSelectedBodyPart() {
 		if m.player.HasEquipped(BodyPart(m.selectionIndex)) {
 			actions = append(actions, m.actionRemove)
 		}
@@ -264,10 +275,14 @@ func (m *Model) getActions() []press.KeyAction {
 }
 
 func (m *Model) getSelectedObject() *EqObject {
-	if m.selectionIndex < BodyPartsMax {
+	if m.isSelectedBodyPart() {
 		return m.player.GetEquippedObject(BodyPart(m.selectionIndex))
 	} else {
 		invIndex := m.selectionIndex - BodyPartsMax
 		return m.player.GetInventoryObject(invIndex)
 	}
+}
+
+func (m *Model) isSelectedBodyPart() bool {
+	return m.selectionIndex < BodyPartsMax
 }

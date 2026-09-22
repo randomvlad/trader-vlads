@@ -32,7 +32,7 @@ func (m *Model) Init() tea.Cmd {
 
 func (m *Model) View() tea.View {
 
-	panel := tabs.NewTabPanel()
+	panel := tabs.NewTabPanel().WithBodyBorderFooterCompatible()
 
 	stats := m.player.GetStats()
 	panel.WriteLn("Character:").

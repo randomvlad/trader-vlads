@@ -76,7 +76,7 @@ func (b *KeyBinder) Get(contextId string, keyPress string) (press.KeyAction, boo
 func (b *KeyBinder) GetFooterVisible(contextId string) []press.KeyAction {
 	var contextActions []press.KeyAction
 	for key, action := range b.bindings {
-		if key.ContextId == contextId && action.FooterVisible {
+		if key.ContextId == contextId && action.IsFooterVisible() {
 			contextActions = append(contextActions, action)
 		}
 	}
