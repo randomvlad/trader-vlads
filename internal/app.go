@@ -28,7 +28,7 @@ type GameData struct {
 	eventTrack   *ev.EventTracker
 	keyBinder    *keybind.KeyBinder
 	tabs         *tabs.Model
-	actionFooter actionfooter.ActionFooter
+	actionFooter *actionfooter.ActionFooter
 	toast        *toastcmp.Toast
 	status       status.Model
 	storyPanel   ev.StoryPanel

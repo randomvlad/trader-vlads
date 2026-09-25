@@ -56,10 +56,14 @@ func (b *PanelBuilder) BodyBorderFooterCompatible() *PanelBuilder {
 }
 
 func (p *PanelBuilder) Build() *Panel {
-	footer := actionfooter.NewPanelFooter(p.keyBinder, p.width)
+
+	var footer *actionfooter.ActionFooter
+	if p.keyBinder != nil {
+		footer = actionfooter.NewPanelFooter(p.keyBinder, p.width)
+	}
 
 	return &Panel{
-		footer:             &footer,
+		footer:             footer,
 		ActionContextLeft:  p.actionContextLeft,
 		ActionContextRight: p.actionContextRight,
 		styleConfig: &panelStyleConfig{

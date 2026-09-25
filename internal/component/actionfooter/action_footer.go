@@ -31,9 +31,9 @@ const (
 	FooterNoStyle
 )
 
-func NewPanelFooter(keyBinder *keybind.KeyBinder, width int) ActionFooter {
+func NewPanelFooter(keyBinder *keybind.KeyBinder, width int) *ActionFooter {
 	footerType := FooterPanel
-	return ActionFooter{
+	return &ActionFooter{
 		footerType: footerType,
 		keyBinder:  keyBinder,
 		styleConfig: actionFooterStyleConfig{
