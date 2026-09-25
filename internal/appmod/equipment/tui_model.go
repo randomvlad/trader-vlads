@@ -18,9 +18,6 @@ type Model struct {
 	player         PlayerService
 	keyBinder      *keybind.KeyBinder
 	toast          ToastMessenger
-	actionRemove   press.KeyAction
-	actionWear     press.KeyAction
-	actionUse      press.KeyAction
 }
 
 func NewTuiModel(player PlayerService, keyBinder *keybind.KeyBinder, toast ToastMessenger) *Model {
@@ -63,7 +60,7 @@ func (m *Model) Init() tea.Cmd {
 		Permanent().
 		Build()
 
-	m.actionRemove = press.NewActionBuilder().
+	actionRemove := press.NewActionBuilder().
 		Name("Remove").
 		Action(func() { m.removeEq() }).
 		FooterVisible(func() bool {
@@ -72,7 +69,7 @@ func (m *Model) Init() tea.Cmd {
 		Permanent().
 		Build()
 
-	m.actionWear = press.NewActionBuilder().
+	actionWear := press.NewActionBuilder().
 		Name("Wear").
 		Action(func() { m.wearEq() }).
 		FooterVisible(func() bool {
@@ -81,7 +78,7 @@ func (m *Model) Init() tea.Cmd {
 		Permanent().
 		Build()
 
-	m.actionUse = press.NewActionBuilder().
+	actionUse := press.NewActionBuilder().
 		Name("Use").
 		Action(func() { m.useItem() }).
 		FooterVisible(func() bool {
@@ -90,14 +87,14 @@ func (m *Model) Init() tea.Cmd {
 		Permanent().
 		Build()
 
-	m.keyBinder.AddActions("tui-eq", eqNext, eqPrev, m.actionRemove, m.actionWear, m.actionUse)
+	m.keyBinder.AddActions("tui-eq", eqNext, eqPrev, actionRemove, actionWear, actionUse)
 
 	return nil
 }
 
 func (m *Model) View() tea.View {
 
-	panel := tabs.NewTabPanel().WithBodyBorderFooterCompatible()
+	panel := tabs.NewTabPanel()
 
 	panel.
 		WriteLn(m.renderEq()).
@@ -253,25 +250,6 @@ func (m *Model) renderInv() string {
 	}
 
 	return view.String()
-}
-
-func (m *Model) getActions() []press.KeyAction {
-	var actions []press.KeyAction
-
-	if m.isSelectedBodyPart() {
-		if m.player.HasEquipped(BodyPart(m.selectionIndex)) {
-			actions = append(actions, m.actionRemove)
-		}
-	} else {
-		invObject := m.getSelectedObject()
-		if invObject.IsWearable() {
-			actions = append(actions, m.actionWear)
-		} else if invObject.IsUsable() {
-			actions = append(actions, m.actionUse)
-		}
-	}
-
-	return actions
 }
 
 func (m *Model) getSelectedObject() *EqObject {

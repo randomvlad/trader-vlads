@@ -3,95 +3,65 @@ package panel
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
 	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
-type Model struct {
-	title      string
-	body       stringutil.Builder
-	bodyLayers []*lipgloss.Layer
-	footer     *actionfooter.Model
-	visual     *modelVisual
+type Panel struct {
+	ActionContextLeft  string
+	ActionContextRight string
+	title              string
+	body               stringutil.Builder
+	bodyLayers         []*lipgloss.Layer
+	footer             *actionfooter.ActionFooter
+	styleConfig        *panelStyleConfig
 }
 
-type modelVisual struct {
+type panelStyleConfig struct {
 	width                      int
 	height                     int
 	bodyBorderFooterCompatible bool
 	styleBody                  lipgloss.Style
 }
 
-func NewModel() *Model {
-	styleBody := appstyle.NewAppStyle().
-		Padding(1, 2).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(appstyle.AppBorderColor)
-
-	return &Model{
-		visual: &modelVisual{
-			width:     80,
-			height:    20,
-			styleBody: styleBody,
-		},
-	}
-}
-
-func (p *Model) WithTitle(title string) *Model {
-	p.title = title
-	return p
-}
-
-func (p *Model) WithWidth(value int) *Model {
-	p.visual.width = value
-	return p
-}
-
-func (p *Model) WithHeight(value int) *Model {
-	p.visual.height = value
-	return p
-}
-
-func (p *Model) WithStyle(styleBody lipgloss.Style) *Model {
-	p.visual.styleBody = styleBody
-	return p
-}
-
-func (p *Model) WithFooter(actions ...press.KeyAction) *Model {
-	p.footer = actionfooter.NewModel(actionfooter.FooterPanel, actions...)
-	return p.WithBodyBorderFooterCompatible()
-}
-
-func (p *Model) WithBodyBorderFooterCompatible() *Model {
-	p.visual.bodyBorderFooterCompatible = true
-	return p
-}
-
-func (p *Model) Write(bodyContent string) *Model {
+func (p *Panel) Write(bodyContent string) *Panel {
 	p.body.Write(bodyContent)
 	return p
 }
 
-func (p *Model) WriteLn(bodyContent string) *Model {
+func (p *Panel) WriteLn(bodyContent string) *Panel {
 	return p.Write(bodyContent).AddLn()
 }
 
-func (p *Model) AddLn() *Model {
+func (p *Panel) AddLn() *Panel {
 	p.body.Ln()
 	return p
 }
 
-func (p *Model) AddLayer(bodyLayer *lipgloss.Layer) *Model {
+func (p *Panel) AddLayer(bodyLayer *lipgloss.Layer) *Panel {
 	p.bodyLayers = append(p.bodyLayers, bodyLayer)
 	return p
 }
 
-func (p *Model) Render() string {
-	compositor := lipgloss.NewCompositor()
+func (p *Panel) Render() string {
+	var view stringutil.Builder
 
-	compositor.AddLayers(lipgloss.NewLayer(p.renderBodyWithFooter())) // main layer
+	if p.title != "" {
+		// if title is present, then custom render the top border with embedded title
+		view.WriteLn(p.renderTitleInsideTopBorder())
+	}
+
+	styleBody := p.getComputedBodyStyle()
+	view.WriteStyle(p.body.String(), styleBody)
+
+	if p.footer != nil {
+		view.Ln().
+			WriteLn(p.footer.Render(p.ActionContextLeft, p.ActionContextRight))
+	}
+
+	compositor := lipgloss.NewCompositor()
+	compositor.AddLayers(lipgloss.NewLayer(view.String())) // main layer
 
 	// additional layers that are typically small popups
 	for _, layer := range p.bodyLayers {
@@ -101,38 +71,22 @@ func (p *Model) Render() string {
 	return compositor.Render()
 }
 
-func (p *Model) RenderTeaView() tea.View {
+func (p *Panel) RenderStyle(style lipgloss.Style) string {
+	return style.Render(p.Render())
+}
+
+func (p *Panel) RenderTeaView() tea.View {
 	return tea.NewView(p.Render())
 }
 
-func (p *Model) renderBodyWithFooter() string {
-	var render stringutil.Builder
-
-	styleBody := p.getComputedBodyStyle()
-
-	if p.title != "" {
-		// if title is present, then custom render the top border with embedded title
-		render.WriteLn(p.renderTopBorderWithTitle())
-	}
-
-	render.WriteStyle(p.body.String(), styleBody)
-
-	if p.footer != nil {
-		p.footer.WithWidth(p.visual.width)
-		render.Ln().WriteLn(p.footer.Render("")) // TODO: action context
-	}
-
-	return render.String()
-}
-
-func (p *Model) renderTopBorderWithTitle() string {
+func (p *Panel) renderTitleInsideTopBorder() string {
 
 	styleBorderTop := appstyle.NewAppStyle().Foreground(appstyle.AppBorderColor)
 	styleTitle := appstyle.NewAppStyle()
 	stylePointedStart := appstyle.NewAppStyle().Foreground(lipgloss.Color("#F54927"))
 
 	// 2 characters for border corners, 4 for left and right padding each
-	borderToFill := p.visual.width - 2 - 4 - 4 - len(p.title)
+	borderToFill := p.styleConfig.width - 2 - 4 - 4 - len(p.title)
 	sideLengthLeft := borderToFill / 2
 	sideLengthRight := borderToFill - sideLengthLeft
 
@@ -152,12 +106,12 @@ func (p *Model) renderTopBorderWithTitle() string {
 		String()
 }
 
-func (p *Model) getComputedBodyStyle() lipgloss.Style {
+func (p *Panel) getComputedBodyStyle() lipgloss.Style {
 
-	computed := p.visual.styleBody.Width(p.visual.width)
-	heightBody := p.visual.height
+	computed := p.styleConfig.styleBody.Width(p.styleConfig.width)
+	heightBody := p.styleConfig.height
 
-	if p.visual.bodyBorderFooterCompatible {
+	if p.styleConfig.bodyBorderFooterCompatible {
 		if p.footer != nil {
 			heightBody -= 2 // reduce body height to make room for the footer
 		}

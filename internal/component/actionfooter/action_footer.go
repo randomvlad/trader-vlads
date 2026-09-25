@@ -10,15 +10,13 @@ import (
 	"github.com/randomvlad/trader-vlads/internal/util/stringutil"
 )
 
-type Model struct {
-	footerType                FooterType
-	keyBinder                 *keybind.KeyBinder
-	displayRightActionContext string
-	actions                   []press.KeyAction
-	visual                    *modelVisual
+type ActionFooter struct {
+	footerType  FooterType
+	keyBinder   *keybind.KeyBinder
+	styleConfig actionFooterStyleConfig
 }
 
-type modelVisual struct {
+type actionFooterStyleConfig struct {
 	width             int
 	styleBorder       lipgloss.Style
 	styleFirstLetter  lipgloss.Style
@@ -33,12 +31,13 @@ const (
 	FooterNoStyle
 )
 
-func NewModel(footerType FooterType, actions ...press.KeyAction) *Model {
-	return &Model{
+func NewPanelFooter(keyBinder *keybind.KeyBinder, width int) ActionFooter {
+	footerType := FooterPanel
+	return ActionFooter{
 		footerType: footerType,
-		actions:    actions,
-		visual: &modelVisual{
-			width:             appstyle.AppWidth,
+		keyBinder:  keyBinder,
+		styleConfig: actionFooterStyleConfig{
+			width:             width,
 			styleBorder:       getStyleBorder(footerType),
 			styleFirstLetter:  appstyle.NewAppStyle().Bold(true).Underline(true),
 			styleOtherLetters: appstyle.NewAppStyle(),
@@ -46,35 +45,11 @@ func NewModel(footerType FooterType, actions ...press.KeyAction) *Model {
 	}
 }
 
-func (m *Model) WithWidth(value int) *Model {
-	m.visual.width = value
-	return m
-}
-
-func (m *Model) WithStyle(style lipgloss.Style) *Model {
-	m.visual.styleBorder = style
-	return m
-}
-
-func (m *Model) WithKeyBinder(keyBinder *keybind.KeyBinder) *Model {
-	m.keyBinder = keyBinder
-	return m
-}
-
-func (m *Model) WithDisplayRightActionContext(actionContext string) *Model {
-	m.displayRightActionContext = actionContext
-	return m
-}
-
-func (m *Model) SetActions(actions ...press.KeyAction) {
-	m.actions = actions
-}
-
-func (m *Model) Render(actionsContext string) string {
+func (m *ActionFooter) Render(actionContextLeft, actionContextRight string) string {
 	var viewParts []string
 
 	viewLeft := stringutil.NewBuilder().Write("Actions: ")
-	actionsLeft := m.getActions(actionsContext)
+	actionsLeft := m.getFooterVisibleActions(actionContextLeft)
 	if len(actionsLeft) > 0 {
 		viewLeft.Write(m.formatActions(actionsLeft))
 	} else {
@@ -82,13 +57,13 @@ func (m *Model) Render(actionsContext string) string {
 	}
 	viewParts = append(viewParts, viewLeft.String())
 
-	actionsRight := m.getDisplayRightActions()
+	actionsRight := m.getFooterVisibleActions(actionContextRight)
 	if len(actionsRight) > 0 {
 		viewRight := stringutil.NewBuilder().
 			WriteStyle(" │ ", lipgloss.NewStyle().Foreground(appstyle.AppBorderColor)).
 			Write(m.formatActions(actionsRight))
 
-		spacerWidth := m.visual.width - m.visual.styleBorder.GetHorizontalFrameSize() - viewLeft.Width() - viewRight.Width()
+		spacerWidth := m.styleConfig.width - m.styleConfig.styleBorder.GetHorizontalFrameSize() - viewLeft.Width() - viewRight.Width()
 		if spacerWidth > 0 {
 			viewParts = append(viewParts, strings.Repeat(" ", spacerWidth))
 		}
@@ -97,17 +72,17 @@ func (m *Model) Render(actionsContext string) string {
 	}
 
 	footerContent := lipgloss.JoinHorizontal(lipgloss.Bottom, viewParts...)
-	borderStyle := m.visual.styleBorder.Width(m.visual.width)
+	borderStyle := m.styleConfig.styleBorder.Width(m.styleConfig.width)
 	return borderStyle.Render(footerContent)
 }
 
-func (m *Model) formatActions(actions []press.KeyAction) string {
+func (m *ActionFooter) formatActions(actions []press.KeyAction) string {
 	content := stringutil.NewBuilder()
 
 	for index, action := range actions {
 		content.WriteStyleRanges(
 			action.Name,
-			lipgloss.NewRange(0, 1, m.visual.styleFirstLetter),
+			lipgloss.NewRange(0, 1, m.styleConfig.styleFirstLetter),
 			lipgloss.NewRange(1, len(action.Name), appstyle.NewAppStyle()),
 		)
 		isLast := index == len(actions)-1
@@ -119,17 +94,9 @@ func (m *Model) formatActions(actions []press.KeyAction) string {
 	return content.String()
 }
 
-func (m *Model) getActions(actionsContext string) []press.KeyAction {
+func (m *ActionFooter) getFooterVisibleActions(actionsContext string) []press.KeyAction {
 	if m.keyBinder != nil && actionsContext != "" {
 		return m.keyBinder.GetFooterVisible(actionsContext)
-	} else {
-		return m.actions // TODO: once refactored, m.actions should no longer be needed
-	}
-}
-
-func (m *Model) getDisplayRightActions() []press.KeyAction {
-	if m.keyBinder != nil && m.displayRightActionContext != "" {
-		return m.keyBinder.GetFooterVisible(m.displayRightActionContext)
 	} else {
 		return []press.KeyAction{}
 	}

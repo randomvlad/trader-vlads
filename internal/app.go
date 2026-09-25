@@ -12,7 +12,6 @@ import (
 	appstats "github.com/randomvlad/trader-vlads/internal/appmod/stats"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	"github.com/randomvlad/trader-vlads/internal/component/actionfooter"
-	apppanel "github.com/randomvlad/trader-vlads/internal/component/panel"
 	"github.com/randomvlad/trader-vlads/internal/component/status"
 	"github.com/randomvlad/trader-vlads/internal/component/tabs"
 	toastcmp "github.com/randomvlad/trader-vlads/internal/component/toast"
@@ -29,9 +28,10 @@ type GameData struct {
 	eventTrack   *ev.EventTracker
 	keyBinder    *keybind.KeyBinder
 	tabs         *tabs.Model
-	actionFooter *actionfooter.Model
+	actionFooter actionfooter.ActionFooter
 	toast        *toastcmp.Toast
 	status       status.Model
+	storyPanel   ev.StoryPanel
 }
 
 type TabId int
@@ -53,18 +53,17 @@ func NewGame() *GameData {
 	turnKeeper := ev.NewTurnKeeper(player, market, keyBinder, random, toast)
 
 	return &GameData{
-		player:      player,
-		turnKeeper:  turnKeeper,
-		keyBinder:   keyBinder,
-		eqModel:     eq.NewTuiModel(player, keyBinder, toast),
-		marketModel: appmarket.NewTuiModel(market, player, keyBinder, toast),
-		statsModel:  appstats.NewTuiModel(player),
-		tabs:        tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
-		actionFooter: actionfooter.NewModel(actionfooter.FooterPanel).
-			WithKeyBinder(keyBinder).
-			WithDisplayRightActionContext("tui-control"),
-		toast:  toast,
-		status: status.New(),
+		player:       player,
+		turnKeeper:   turnKeeper,
+		keyBinder:    keyBinder,
+		eqModel:      eq.NewTuiModel(player, keyBinder, toast),
+		marketModel:  appmarket.NewTuiModel(market, player, keyBinder, toast),
+		statsModel:   appstats.NewTuiModel(player),
+		storyPanel:   ev.NewStoryPanel(keyBinder),
+		tabs:         tabs.NewModel("📜 Events", "🏦 Market", "💠 Equipment", "🔍 Stats"),
+		actionFooter: actionfooter.NewPanelFooter(keyBinder, appstyle.AppWidth),
+		toast:        toast,
+		status:       status.New(),
 	}
 }
 
@@ -124,12 +123,7 @@ func (gd *GameData) View() tea.View {
 	var view stringutil.Builder
 
 	if activeStory := gd.turnKeeper.EventTracker.GetActiveStory(); activeStory != nil {
-		panel := apppanel.NewModel().
-			WithTitle(activeStory.GetName()).
-			WithFooter(activeStory.GetCurrentActions()...).
-			Write(activeStory.View())
-		view.WriteStyle(panel.Render(), appstyle.StyleStoryContainer)
-
+		view.Write(gd.storyPanel.Render(activeStory))
 	} else {
 		// status bar
 		view.WriteLn(gd.status.Render(gd.turnKeeper.GetTurn(), gd.player.GetMoney()))
@@ -137,28 +131,26 @@ func (gd *GameData) View() tea.View {
 		// tabs and tab content
 		view.WriteLn(gd.tabs.View())
 
-		var actionsContext string
+		var actionContext string
 		activeTab := TabId(gd.tabs.ActiveTab)
 		switch activeTab {
 		case TabEvents:
-			panel := tabs.NewTabPanel().
-				WithBodyBorderFooterCompatible().
-				WriteLn("Events History")
+			panel := tabs.NewTabPanel().WriteLn("Events History")
 			view.WriteLn(panel.Render())
 		case TabMarket:
 			gd.marketModel.Resources = gd.player.Warehouse.Resources
 			view.WriteLn(gd.marketModel.View().Content)
-			actionsContext = "tui-market"
+			actionContext = "tui-market"
 		case TabEquipment:
 			view.WriteLn(gd.eqModel.View().Content)
-			actionsContext = "tui-eq"
+			actionContext = "tui-eq"
 		case TabStats:
 			view.WriteLn(gd.statsModel.View().Content)
-			actionsContext = "tui-stats"
+			actionContext = "tui-stats"
 		}
 
 		// footer
-		view.Write(gd.actionFooter.Render(actionsContext))
+		view.Write(gd.actionFooter.Render(actionContext, "tui-control"))
 	}
 
 	layerMain := lipgloss.NewLayer(view.String())
@@ -178,10 +170,7 @@ func (gd *GameData) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	if story := gd.turnKeeper.EventTracker.GetActiveStory(); story != nil {
-		if gd.keyBinder.IsBound(story.GetStateId(), msg) {
-			cmd := gd.keyBinder.Execute(story.GetStateId(), msg)
-			cmds = append(cmds, cmd)
-		}
+		gd.storyPanel.Update(story.GetStateId(), msg)
 	} else if gd.keyBinder.IsBound("tui-control", msg) {
 		cmd := gd.keyBinder.Execute("tui-control", msg)
 		cmds = append(cmds, cmd)

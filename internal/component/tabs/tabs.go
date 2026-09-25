@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/randomvlad/trader-vlads/internal/appmod/keybind/press"
 	"github.com/randomvlad/trader-vlads/internal/appstyle"
 	apppanel "github.com/randomvlad/trader-vlads/internal/component/panel"
 )
@@ -53,24 +52,18 @@ func newModelVisual(width int) *modelVisual {
 	}
 }
 
-func NewTabPanel(actions ...press.KeyAction) *apppanel.Model {
-
+func NewTabPanel() *apppanel.Panel {
 	styleTabBody := appstyle.NewAppStyle().
 		Padding(0, 2).
 		Border(lipgloss.RoundedBorder()).
 		BorderTop(false). // top border is drawn by tabs view
 		BorderForeground(appstyle.AppBorderColor)
 
-	model := apppanel.NewModel().
-		WithStyle(styleTabBody).
-		WithWidth(appstyle.AppWidth).
-		WithHeight(appstyle.TabHeight)
-
-	if len(actions) > 0 {
-		model.WithFooter(actions...)
-	}
-
-	return model
+	return apppanel.NewPanelBuilder().
+		Size(appstyle.AppWidth, appstyle.TabHeight).
+		StyleBody(styleTabBody).
+		BodyBorderFooterCompatible().
+		Build()
 }
 
 // TODO: []TabModel struct with fields: id, display, shortcut key?

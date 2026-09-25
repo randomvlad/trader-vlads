@@ -112,7 +112,6 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) View() tea.View {
 
 	panel := tabs.NewTabPanel().
-		WithBodyBorderFooterCompatible().
 		WriteLn(viewMarket(m.market)).
 		AddLn().
 		WriteLn(viewWarehouse(m.Resources))

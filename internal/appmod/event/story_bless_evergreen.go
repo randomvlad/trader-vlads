@@ -65,20 +65,3 @@ func (s *StoryEvergreenBlessings) initScenes(player PlayerTurnService, r *util.R
 
 	s.addScenes(sceneStart, sceneAccepted, sceneDeclined)
 }
-
-/*
-{
-			Name:        "Blessings of Evergreen",
-			Description: "The forest nymphs of Evergreen have bestowed their blessings upon you.",
-			EffectDefs: []eff.EffectInstanceCreator{
-				&eff.GrantResourceEffectDef{
-					BaseEffectDef: &eff.BaseEffectDef{
-						Name:     "Blessings of Evergreen",
-						Duration: eff.NewDuration().Turns(2, 4),
-					},
-					Resource: "Wood",
-					Amount:   util.NewRangeInt(1, 1),
-				},
-			},
-		},
-*/
