@@ -1,20 +1,34 @@
-# Trader Vlad's 
+<h1 align="center">
+    <img alt="Money Bag Icon" src="docs/images/icon-chest-locked.svg" style="height: 32px"> 
+    <img alt="Cmd Terminal Icon" src="docs/images/icon-minerals.svg" style="height: 32px"> 
+    <img alt="Monster Icon" src="docs/images/icon-skull-shield.svg" style="height: 32px"> 
+    <br>Trader Vlad's
+</h1>
+
+![Static Badge](https://img.shields.io/badge/Game_Dev_Status-Alpha-orange?style=for-the-badge&logo=gamebanana)
 
 A turn-based fantasy game of strategy, trade and loot. Built for play in the terminal with Golang and [Bubble Tea](https://github.com/charmbracelet/bubbletea) framework.  
 
-> [!WARNING]
-> The game is under active development and in early pre-alpha stages.
+## Early Game Screenshots
 
-## Homage to My Favorite Games
+### Equipment
+<img src="docs/images/tv_screenshot_eq.png" style="height: 600px" alt="Trader Vlads equipment screenshot" />
 
-I've dabbled with computer and video games for a sizable chunk of my free time. Trader Vlad's is an amalgamation of many different classics. Some games shine through in subtle aspects, while others have inspired core game mechanics.
+### Stats
+<img src="docs/images/tv_screenshot_stats.png" style="height: 600px" alt="Trader Vlads stats screenshot" />
 
-In no particular order:
+### Market
+<img src="docs/images/tv_screenshot_market.png" style="height: 600px" alt="Trader Vlads market screenshot" /> 
+
+### Story   
+<img src="docs/images/tv_screenshot_story.png" style="height: 600px" alt="Trader Vlads story screenshot" /> 
+
+## Author's Note
+
+I've started this game primarily for fun and learning. I wanted to get more exposure building terminal apps in Go and Bubble Tea framework. Trader Vlad's is an amalgamation of many different classics. Some games shine through in subtle aspects, while others have inspired core game mechanics.
+
+Drawing on inspiration and influence from:
 - [DarkMists](https://darkmists.org/)
-- Clash of Clans
 - Diablo II
 - Heroes of Might and Magic III
-- Magic The Gathering
-- Hades
-- Expedition 33
-- God of War
+- Clash of Clans
