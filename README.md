@@ -25,9 +25,9 @@ A turn-based fantasy game of strategy, trade and loot. Built for play in the ter
 
 ## Author's Note
 
-I've started this game primarily for fun and learning. I wanted to get more exposure building terminal apps in Go and Bubble Tea framework. Trader Vlad's is an amalgamation of many different classics. Some games shine through in subtle aspects, while others have inspired core game mechanics.
+I've started this game primarily for the joy of tinkering with code and learning new things. Plus I wanted to get more exposure building terminal apps in Go and Bubble Tea framework. Trader Vlad's is an amalgamation of many different classics. Some games shine through in subtle aspects, while others have inspired core game mechanics.
 
-Drawing on inspiration and influence from:
+Drawing on inspiration and countless hours spent playing:
 - [DarkMists](https://darkmists.org/)
 - Diablo II
 - Heroes of Might and Magic III
