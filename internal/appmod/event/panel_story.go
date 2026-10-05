@@ -28,6 +28,7 @@ func NewStoryPanel(keyBinder *keybind.KeyBinder) StoryPanel {
 func (p *StoryPanel) Render(story Story) string {
 	panel := apppanel.NewPanelBuilder().
 		Size(80, 25).
+		Title(story.GetName()).
 		Footer(p.keyBinder, story.GetStateId(), "").
 		Build()
 

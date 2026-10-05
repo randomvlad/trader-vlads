@@ -64,6 +64,7 @@ func (p *PanelBuilder) Build() *Panel {
 
 	return &Panel{
 		footer:             footer,
+		title:              p.title,
 		ActionContextLeft:  p.actionContextLeft,
 		ActionContextRight: p.actionContextRight,
 		styleConfig: &panelStyleConfig{
